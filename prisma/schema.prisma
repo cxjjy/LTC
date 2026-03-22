@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SALES
+  PM
+  DELIVERY
+  FINANCE
+}
+
+enum LeadStatus {
+  NEW
+  FOLLOWING
+  CONVERTED
+  CLOSED
+}
+
+enum OpportunityStage {
+  DISCOVERY
+  REQUIREMENT
+  PROPOSAL
+  QUOTATION
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum ProjectStatus {
+  INITIATING
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CANCELED
+}
+
+enum ContractStatus {
+  DRAFT
+  APPROVING
+  EFFECTIVE
+  TERMINATED
+}
+
+enum DeliveryStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ACCEPTED
+  DELAYED
+  CANCELED
+}
+
+enum CostCategory {
+  PROCUREMENT
+  LABOR
+  TRAVEL
+  OUTSOURCING
+  OTHER
+}
+
+enum ReceivableStatus {
+  PENDING
+  PARTIAL
+  RECEIVED
+  OVERDUE
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  SOFT_DELETE
+  STATUS_CHANGE
+  CONVERT
+  LOGIN
+}
+
+enum EntityType {
+  USER
+  CUSTOMER
+  LEAD
+  OPPORTUNITY
+  PROJECT
+  CONTRACT
+  DELIVERY
+  COST
+  RECEIVABLE
+  AUDIT_LOG
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique @db.VarChar(100)
+  passwordHash String   @db.VarChar(255)
+  name         String   @db.VarChar(100)
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  code         String   @unique @db.VarChar(40)
+  name         String   @db.VarChar(200)
+  industry     String?  @db.VarChar(100)
+  contactName  String?  @db.VarChar(100)
+  contactPhone String?  @db.VarChar(50)
+  address      String?  @db.VarChar(255)
+  remark       String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String   @db.VarChar(191)
+  updatedBy    String   @db.VarChar(191)
+  isDeleted    Boolean  @default(false)
+
+  leads         Lead[]
+  opportunities Opportunity[]
+  projects      Project[]
+  contracts     Contract[]
+  deliveries    Delivery[]
+  costs         Cost[]
+  receivables   Receivable[]
+
+  @@index([name, isDeleted])
+  @@index([isDeleted, createdAt])
+}
+
+model Lead {
+  id                String     @id @default(cuid())
+  code              String     @unique @db.VarChar(40)
+  customerId        String
+  title             String     @db.VarChar(200)
+  source            String?    @db.VarChar(100)
+  contactName       String?    @db.VarChar(100)
+  contactPhone      String?    @db.VarChar(50)
+  expectedAmount    Decimal?   @db.Decimal(18, 2)
+  expectedCloseDate DateTime?
+  latestFollowUpAt  DateTime?
+  description       String?    @db.Text
+  status            LeadStatus @default(NEW)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  createdBy         String     @db.VarChar(191)
+  updatedBy         String     @db.VarChar(191)
+  isDeleted         Boolean    @default(false)
+
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  opportunity Opportunity?
+
+  @@index([customerId, isDeleted])
+  @@index([status, isDeleted])
+}
+
+model Opportunity {
+  id               String           @id @default(cuid())
+  code             String           @unique @db.VarChar(40)
+  customerId       String
+  leadId           String?          @unique
+  name             String           @db.VarChar(200)
+  description      String?          @db.Text
+  amount           Decimal          @db.Decimal(18, 2)
+  expectedSignDate DateTime?
+  winRate          Int              @default(0)
+  stage            OpportunityStage @default(DISCOVERY)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  createdBy        String           @db.VarChar(191)
+  updatedBy        String           @db.VarChar(191)
+  isDeleted        Boolean          @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  lead     Lead?    @relation(fields: [leadId], references: [id])
+  projects Project[]
+
+  @@index([customerId, isDeleted])
+  @@index([stage, isDeleted])
+}
+
+model Project {
+  id               String        @id @default(cuid())
+  code             String        @unique @db.VarChar(40)
+  customerId       String
+  opportunityId    String
+  name             String        @db.VarChar(200)
+  description      String?       @db.Text
+  budgetAmount     Decimal?      @db.Decimal(18, 2)
+  plannedStartDate DateTime?
+  plannedEndDate   DateTime?
+  status           ProjectStatus @default(INITIATING)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  createdBy        String        @db.VarChar(191)
+  updatedBy        String        @db.VarChar(191)
+  isDeleted        Boolean       @default(false)
+
+  customer     Customer     @relation(fields: [customerId], references: [id])
+  opportunity  Opportunity  @relation(fields: [opportunityId], references: [id])
+  contracts    Contract[]
+  deliveries   Delivery[]
+  costs        Cost[]
+  receivables  Receivable[]
+
+  @@index([customerId, isDeleted])
+  @@index([opportunityId, isDeleted])
+  @@index([status, isDeleted])
+}
+
+model Contract {
+  id             String         @id @default(cuid())
+  code           String         @unique @db.VarChar(40)
+  customerId     String
+  projectId      String
+  name           String         @db.VarChar(200)
+  contractAmount Decimal        @db.Decimal(18, 2)
+  signedDate     DateTime?
+  effectiveDate  DateTime?
+  endDate        DateTime?
+  status         ContractStatus @default(DRAFT)
+  description    String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  createdBy      String         @db.VarChar(191)
+  updatedBy      String         @db.VarChar(191)
+  isDeleted      Boolean        @default(false)
+
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  project     Project       @relation(fields: [projectId], references: [id])
+  receivables Receivable[]
+
+  @@index([customerId, isDeleted])
+  @@index([projectId, isDeleted])
+  @@index([status, isDeleted])
+}
+
+model Delivery {
+  id              String         @id @default(cuid())
+  code            String         @unique @db.VarChar(40)
+  customerId      String
+  projectId       String
+  title           String         @db.VarChar(200)
+  description     String?        @db.Text
+  ownerName       String?        @db.VarChar(100)
+  plannedDate     DateTime?
+  actualDate      DateTime?
+  acceptanceDate  DateTime?
+  status          DeliveryStatus @default(NOT_STARTED)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String         @db.VarChar(191)
+  updatedBy       String         @db.VarChar(191)
+  isDeleted       Boolean        @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  project  Project  @relation(fields: [projectId], references: [id])
+
+  @@index([customerId, isDeleted])
+  @@index([projectId, isDeleted])
+  @@index([status, isDeleted])
+}
+
+model Cost {
+  id          String       @id @default(cuid())
+  code        String       @unique @db.VarChar(40)
+  customerId  String
+  projectId   String
+  title       String       @db.VarChar(200)
+  category    CostCategory
+  amount      Decimal      @db.Decimal(18, 2)
+  occurredAt  DateTime
+  description String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdBy   String       @db.VarChar(191)
+  updatedBy   String       @db.VarChar(191)
+  isDeleted   Boolean      @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  project  Project  @relation(fields: [projectId], references: [id])
+
+  @@index([customerId, isDeleted])
+  @@index([projectId, isDeleted])
+  @@index([category, isDeleted])
+}
+
+model Receivable {
+  id             String           @id @default(cuid())
+  code           String           @unique @db.VarChar(40)
+  customerId     String
+  projectId      String
+  contractId     String
+  title          String           @db.VarChar(200)
+  amountDue      Decimal          @db.Decimal(18, 2)
+  amountReceived Decimal          @default(0) @db.Decimal(18, 2)
+  dueDate        DateTime
+  receivedDate   DateTime?
+  status         ReceivableStatus @default(PENDING)
+  description    String?          @db.Text
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  createdBy      String           @db.VarChar(191)
+  updatedBy      String           @db.VarChar(191)
+  isDeleted      Boolean          @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  project  Project  @relation(fields: [projectId], references: [id])
+  contract Contract @relation(fields: [contractId], references: [id])
+
+  @@index([customerId, isDeleted])
+  @@index([projectId, isDeleted])
+  @@index([contractId, isDeleted])
+  @@index([status, isDeleted])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  entityType EntityType
+  entityId   String      @db.VarChar(191)
+  entityCode String?     @db.VarChar(40)
+  action     AuditAction
+  message    String      @db.VarChar(255)
+  actorId    String      @db.VarChar(191)
+  payload    Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([actorId])
+}
+
+model CodeSequence {
+  id           String     @id @default(cuid())
+  entityType   EntityType
+  prefix       String     @db.VarChar(20)
+  year         Int
+  currentValue Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([entityType, year])
+}

@@ -1,0 +1,288 @@
+import { ContractStatus, EntityType, Prisma } from "@prisma/client";
+
+import type { SessionUser } from "@/lib/auth";
+import {
+  createPaginationMeta,
+  parseDateEnd,
+  parseDateStart,
+  parseNumberFilter,
+  type ListParams
+} from "@/lib/pagination";
+import { prisma } from "@/lib/prisma";
+import { assertCanAccessRecord } from "@/lib/rbac";
+import { notFound } from "@/lib/errors";
+import { auditLogService } from "@/modules/core/audit-log.service";
+import { BaseCrudService } from "@/modules/core/base-crud-service";
+import { generateBusinessCode } from "@/modules/core/code-generator.service";
+import { toDecimal } from "@/modules/core/decimal";
+import { assertContractStatusTransition } from "@/modules/core/status-transition-validator";
+import type {
+  ChangeContractStatusDto,
+  CreateContractDto,
+  UpdateContractDto
+} from "@/modules/contracts/dto";
+import { contractRepository } from "@/modules/contracts/repository";
+
+class ContractService extends BaseCrudService<unknown> {
+  constructor() {
+    super(contractRepository, "contract", EntityType.CONTRACT);
+  }
+
+  async list(params: Required<ListParams>, user: SessionUser) {
+    assertCanAccessRecord(user, "contract", "view");
+    const filters = params.filters;
+    const and: Prisma.ContractWhereInput[] = [];
+
+    if (params.keyword) {
+      and.push({
+        OR: [
+          { code: { contains: params.keyword } },
+          { name: { contains: params.keyword } },
+          { customer: { name: { contains: params.keyword } } }
+        ]
+      });
+    }
+
+    if (filters.name) {
+      and.push({ name: { contains: filters.name } });
+    }
+
+    if (filters.projectName) {
+      and.push({ project: { name: { contains: filters.projectName } } });
+    }
+
+    const minAmount = parseNumberFilter(filters.minAmount);
+    const maxAmount = parseNumberFilter(filters.maxAmount);
+    if (minAmount !== undefined || maxAmount !== undefined) {
+      and.push({
+        contractAmount: {
+          ...(minAmount !== undefined ? { gte: minAmount } : {}),
+          ...(maxAmount !== undefined ? { lte: maxAmount } : {})
+        }
+      });
+    }
+
+    const createdFrom = parseDateStart(filters.createdFrom);
+    const createdTo = parseDateEnd(filters.createdTo);
+    if (createdFrom || createdTo) {
+      and.push({
+        createdAt: {
+          ...(createdFrom ? { gte: createdFrom } : {}),
+          ...(createdTo ? { lte: createdTo } : {})
+        }
+      });
+    }
+
+    const signedFrom = parseDateStart(filters.signedFrom);
+    const signedTo = parseDateEnd(filters.signedTo);
+    if (signedFrom || signedTo) {
+      and.push({
+        signedDate: {
+          ...(signedFrom ? { gte: signedFrom } : {}),
+          ...(signedTo ? { lte: signedTo } : {})
+        }
+      });
+    }
+
+    const where: Prisma.ContractWhereInput = {
+      ...(params.status ? { status: params.status as ContractStatus } : {}),
+      ...(and.length ? { AND: and } : {})
+    };
+    const orderByMap: Record<string, Prisma.ContractOrderByWithRelationInput> = {
+      signedDate: { signedDate: params.sortOrder },
+      createdAt: { createdAt: params.sortOrder },
+      contractAmount: { contractAmount: params.sortOrder },
+      name: { name: params.sortOrder }
+    };
+
+    const total = await contractRepository.count(where);
+    const items = await contractRepository.findMany({
+      where,
+      include: {
+        customer: true,
+        project: {
+          include: {
+            opportunity: {
+              include: {
+                lead: true
+              }
+            }
+          }
+        },
+        receivables: {
+          where: { isDeleted: false }
+        }
+      },
+      orderBy: orderByMap[params.sortBy] ?? { signedDate: "desc" },
+      skip: (params.page - 1) * params.pageSize,
+      take: params.pageSize
+    });
+
+    return {
+      items,
+      ...createPaginationMeta(total, params.page, params.pageSize)
+    };
+  }
+
+  async create(data: CreateContractDto, user: SessionUser) {
+    assertCanAccessRecord(user, "contract", "create");
+    const project = await prisma.project.findFirst({
+      where: {
+        id: data.projectId,
+        isDeleted: false
+      }
+    });
+
+    if (!project) {
+      throw notFound("项目不存在");
+    }
+
+    const code = await generateBusinessCode(EntityType.CONTRACT);
+    const record = await contractRepository.create({
+      ...data,
+      customerId: project.customerId,
+      contractAmount: toDecimal(data.contractAmount),
+      status: data.status ?? ContractStatus.DRAFT,
+      code,
+      createdBy: user.id,
+      updatedBy: user.id
+    });
+
+    await auditLogService.log({
+      entityType: EntityType.CONTRACT,
+      entityId: (record as { id: string }).id,
+      entityCode: code,
+      action: "CREATE",
+      actorId: user.id,
+      message: "创建合同"
+    });
+
+    return record;
+  }
+
+  async update(id: string, data: UpdateContractDto, user: SessionUser) {
+    assertCanAccessRecord(user, "contract", "update");
+    const existing = await contractRepository.findById(id);
+    if (!existing) {
+      throw notFound();
+    }
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id: data.projectId,
+        isDeleted: false
+      }
+    });
+
+    if (!project) {
+      throw notFound("项目不存在");
+    }
+
+    const previousStatus = (existing as { status: ContractStatus }).status;
+    const record = await contractRepository.update(id, {
+      ...data,
+      customerId: project.customerId,
+      contractAmount: toDecimal(data.contractAmount),
+      updatedBy: user.id
+    });
+
+    await auditLogService.log({
+      entityType: EntityType.CONTRACT,
+      entityId: id,
+      entityCode: (record as { code: string }).code,
+      action: "UPDATE",
+      actorId: user.id,
+      message: "更新合同"
+    });
+
+    if (previousStatus !== data.status) {
+      await auditLogService.log({
+        entityType: EntityType.CONTRACT,
+        entityId: id,
+        entityCode: (record as { code: string }).code,
+        action: "STATUS_CHANGE",
+        actorId: user.id,
+        message: `合同状态变更为 ${data.status}`,
+        payload: {
+          from: previousStatus,
+          to: data.status
+        }
+      });
+    }
+
+    return record;
+  }
+
+  async changeContractStatus(id: string, data: ChangeContractStatusDto, user: SessionUser) {
+    assertCanAccessRecord(user, "contract", "status");
+    const existing = await contractRepository.findById(id);
+
+    if (!existing) {
+      throw notFound();
+    }
+
+    const contract = existing as { status: ContractStatus; code: string };
+    assertContractStatusTransition(contract.status, data.status);
+
+    const updated = await contractRepository.update(id, {
+      status: data.status,
+      effectiveDate: data.status === ContractStatus.EFFECTIVE ? new Date() : undefined,
+      updatedBy: user.id
+    });
+
+    await auditLogService.log({
+      entityType: EntityType.CONTRACT,
+      entityId: id,
+      entityCode: contract.code,
+      action: "STATUS_CHANGE",
+      actorId: user.id,
+      message: `合同状态变更为 ${data.status}`,
+      payload: {
+        from: contract.status,
+        to: data.status
+      }
+    });
+
+    return updated;
+  }
+
+  async getDetail(id: string, user: SessionUser) {
+    assertCanAccessRecord(user, "contract", "view");
+    const record = await contractRepository.findById(id, {
+      customer: true,
+      project: {
+        include: {
+          opportunity: {
+            include: {
+              lead: true
+            }
+          }
+        }
+      },
+      receivables: {
+        where: { isDeleted: false },
+        orderBy: { dueDate: "asc" }
+      }
+    });
+
+    if (!record) {
+      throw notFound();
+    }
+
+    return record;
+  }
+
+  async getOptions(user: SessionUser) {
+    assertCanAccessRecord(user, "contract", "view");
+    const items = await contractRepository.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200
+    });
+    return items.map((item) => ({
+      label: `${(item as { code: string }).code} / ${(item as { name: string }).name}`,
+      value: (item as { id: string }).id
+    }));
+  }
+}
+
+export const contractService = new ContractService();
