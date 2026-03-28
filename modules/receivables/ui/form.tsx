@@ -34,7 +34,11 @@ export function ReceivableForm({
       submitUrl={mode === "create" ? "/api/receivables" : `/api/receivables/${receivableId}`}
       submitMethod={mode === "create" ? "POST" : "PUT"}
       submitLabel={mode === "create" ? "创建回款" : "保存修改"}
-      successHref={mode === "create" ? "/receivables" : `/receivables/${receivableId}`}
+      successHref={
+        mode === "create"
+          ? (payload) => (payload.data?.id ? `/receivables/${payload.data.id}` : "/receivables")
+          : `/receivables/${receivableId}`
+      }
     />
   );
 }

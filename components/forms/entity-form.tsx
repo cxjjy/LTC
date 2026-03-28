@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getUserFriendlyError, type ApiErrorPayload, type ApiSuccessPayload } from "@/lib/ui-error";
 import type { SelectOption } from "@/types/common";
 
 export type EntityFormField<T = unknown> = {
@@ -33,7 +34,7 @@ type EntityFormProps = {
   submitUrl: string;
   submitMethod: "POST" | "PUT";
   submitLabel: string;
-  successHref: string;
+  successHref: string | ((payload: { success: boolean; data?: { id?: string } }) => string);
 };
 
 export function EntityForm({
@@ -65,14 +66,18 @@ export function EntityForm({
         body: JSON.stringify(values)
       });
 
-      const payload = await response.json();
+      const payload = (await response.json()) as ApiErrorPayload | ApiSuccessPayload<{ id?: string }>;
 
       if (!response.ok) {
-        setError(payload.error ?? "提交失败");
+        setError(getUserFriendlyError(payload, "提交失败，请稍后重试"));
         return;
       }
 
-      router.push(successHref);
+      const targetHref =
+        typeof successHref === "function"
+          ? successHref(payload as ApiSuccessPayload<{ id?: string }>)
+          : successHref;
+      router.push(targetHref);
       router.refresh();
     });
   });

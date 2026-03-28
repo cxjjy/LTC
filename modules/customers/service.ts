@@ -8,7 +8,8 @@ import {
 } from "@/lib/pagination";
 import { assertCanAccessRecord } from "@/lib/rbac";
 import type { SessionUser } from "@/lib/auth";
-import { notFound } from "@/lib/errors";
+import { badRequest, notFound } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
 import { generateBusinessCode } from "@/modules/core/code-generator.service";
 import { auditLogService } from "@/modules/core/audit-log.service";
 import { BaseCrudService } from "@/modules/core/base-crud-service";
@@ -18,6 +19,24 @@ import { customerRepository } from "@/modules/customers/repository";
 class CustomerService extends BaseCrudService<unknown> {
   constructor() {
     super(customerRepository, "customer", EntityType.CUSTOMER);
+  }
+
+  protected override async assertCanSoftDelete(record: unknown) {
+    const customer = record as { id: string };
+    const [leadCount, opportunityCount, projectCount, contractCount, deliveryCount, costCount, receivableCount] =
+      await Promise.all([
+        prisma.lead.count({ where: { customerId: customer.id, isDeleted: false } }),
+        prisma.opportunity.count({ where: { customerId: customer.id, isDeleted: false } }),
+        prisma.project.count({ where: { customerId: customer.id, isDeleted: false } }),
+        prisma.contract.count({ where: { customerId: customer.id, isDeleted: false } }),
+        prisma.delivery.count({ where: { customerId: customer.id, isDeleted: false } }),
+        prisma.cost.count({ where: { customerId: customer.id, isDeleted: false } }),
+        prisma.receivable.count({ where: { customerId: customer.id, isDeleted: false } })
+      ]);
+
+    if (leadCount || opportunityCount || projectCount || contractCount || deliveryCount || costCount || receivableCount) {
+      throw badRequest("当前客户存在关联业务数据，无法删除");
+    }
   }
 
   async list(params: Required<ListParams>, user: SessionUser) {
@@ -61,6 +80,7 @@ class CustomerService extends BaseCrudService<unknown> {
     const where: Prisma.CustomerWhereInput = and.length ? { AND: and } : {};
     const orderByMap: Record<string, Prisma.CustomerOrderByWithRelationInput> = {
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       name: { name: params.sortOrder },
       code: { code: params.sortOrder }
     };

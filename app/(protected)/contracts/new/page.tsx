@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { projectService } from "@/modules/projects/service";
 import { ContractForm } from "@/modules/contracts/ui/form";
 
 export default async function NewContractPage() {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "contract", "create");
   const projectOptions = await projectService.getOptions(user);
 
   return (

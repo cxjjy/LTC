@@ -2,18 +2,28 @@ import { ListPageShell } from "@/components/list-page-shell";
 import { PageShell } from "@/components/page-shell";
 import { deliveryStatusLabels } from "@/lib/constants";
 import { requireSessionUser } from "@/lib/auth";
+import { getDeleteCopy } from "@/lib/delete-config";
 import { buildListHref, normalizeListParams, omitListFilters } from "@/lib/pagination";
+import { canAccessRecord, requirePagePermission } from "@/lib/rbac";
 import { formatDate } from "@/lib/utils";
 import { deliveryService } from "@/modules/deliveries/service";
 import { deliveryListConfig } from "@/modules/deliveries/ui/config";
 import type { PageSearchParams } from "@/types/common";
 
 export default async function DeliveriesPage({ searchParams }: { searchParams: PageSearchParams }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "delivery", "view");
+  const canCreate = canAccessRecord(user, "delivery", "create");
+  const canUpdate = canAccessRecord(user, "delivery", "update");
+  const canDelete = canAccessRecord(user, "delivery", "delete");
+  const deleteCopy = getDeleteCopy("delivery");
   const params = normalizeListParams(searchParams);
   const view = typeof searchParams.view === "string" ? searchParams.view : "all";
   const result = await deliveryService.list(params, user);
-  const rows = result.items.map((item: any) => ({
+  const exportResult =
+    result.total > result.items.length
+      ? await deliveryService.list({ ...params, page: 1, pageSize: result.total }, user)
+      : result;
+  const mapRow = (item: any) => ({
     code: item.code,
     codeHref: `/deliveries/${item.id}`,
     title: item.title,
@@ -21,8 +31,18 @@ export default async function DeliveriesPage({ searchParams }: { searchParams: P
     ownerName: item.ownerName || "-",
     statusLabel: deliveryStatusLabels[item.status as keyof typeof deliveryStatusLabels],
     plannedDate: formatDate(item.plannedDate),
-    actualDate: formatDate(item.actualDate)
-  }));
+    actualDate: formatDate(item.actualDate),
+    rowActions: {
+      moduleLabel: deleteCopy.moduleLabel,
+      recordLabel: `${item.code} / ${item.title}`,
+      viewHref: `/deliveries/${item.id}`,
+      editHref: canUpdate ? `/deliveries/${item.id}/edit` : undefined,
+      deleteEndpoint: canDelete ? `/api/deliveries/${item.id}` : undefined,
+      deleteWarning: deleteCopy.warning
+    }
+  });
+  const rows = result.items.map(mapRow);
+  const exportRows = exportResult.items.map(mapRow);
 
   return (
     <PageShell
@@ -35,6 +55,7 @@ export default async function DeliveriesPage({ searchParams }: { searchParams: P
     >
       <ListPageShell
         config={deliveryListConfig}
+        canCreate={canCreate}
         tabs={[
           {
             label: "全部交付",
@@ -64,6 +85,7 @@ export default async function DeliveriesPage({ searchParams }: { searchParams: P
           }
         ]}
         data={rows}
+        exportRows={exportRows}
         total={result.total}
         page={result.page}
         pageSize={result.pageSize}

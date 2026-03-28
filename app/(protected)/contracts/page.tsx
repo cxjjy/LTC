@@ -2,7 +2,9 @@ import { ListPageShell } from "@/components/list-page-shell";
 import { PageShell } from "@/components/page-shell";
 import { contractStatusLabels } from "@/lib/constants";
 import { requireSessionUser } from "@/lib/auth";
+import { getDeleteCopy } from "@/lib/delete-config";
 import { buildListHref, normalizeListParams, omitListFilters } from "@/lib/pagination";
+import { canAccessRecord, requirePagePermission } from "@/lib/rbac";
 import { formatDate } from "@/lib/utils";
 import { decimalToNumber } from "@/modules/core/decimal";
 import { contractService } from "@/modules/contracts/service";
@@ -10,11 +12,19 @@ import { contractListConfig } from "@/modules/contracts/ui/config";
 import type { PageSearchParams } from "@/types/common";
 
 export default async function ContractsPage({ searchParams }: { searchParams: PageSearchParams }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "contract", "view");
+  const canCreate = canAccessRecord(user, "contract", "create");
+  const canUpdate = canAccessRecord(user, "contract", "update");
+  const canDelete = canAccessRecord(user, "contract", "delete");
+  const deleteCopy = getDeleteCopy("contract");
   const params = normalizeListParams(searchParams);
   const view = typeof searchParams.view === "string" ? searchParams.view : "all";
   const result = await contractService.list(params, user);
-  const rows = result.items.map((item: any) => ({
+  const exportResult =
+    result.total > result.items.length
+      ? await contractService.list({ ...params, page: 1, pageSize: result.total }, user)
+      : result;
+  const mapRow = (item: any) => ({
     code: item.code,
     codeHref: `/contracts/${item.id}`,
     name: item.name,
@@ -22,8 +32,18 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pa
     statusLabel: contractStatusLabels[item.status as keyof typeof contractStatusLabels],
     signedDate: formatDate(item.signedDate),
     effectiveDate: formatDate(item.effectiveDate),
-    contractAmount: decimalToNumber(item.contractAmount)
-  }));
+    contractAmount: decimalToNumber(item.contractAmount),
+    rowActions: {
+      moduleLabel: deleteCopy.moduleLabel,
+      recordLabel: `${item.code} / ${item.name}`,
+      viewHref: `/contracts/${item.id}`,
+      editHref: canUpdate ? `/contracts/${item.id}/edit` : undefined,
+      deleteEndpoint: canDelete ? `/api/contracts/${item.id}` : undefined,
+      deleteWarning: deleteCopy.warning
+    }
+  });
+  const rows = result.items.map(mapRow);
+  const exportRows = exportResult.items.map(mapRow);
 
   return (
     <PageShell
@@ -36,6 +56,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pa
     >
       <ListPageShell
         config={contractListConfig}
+        canCreate={canCreate}
         tabs={[
           {
             label: "全部合同",
@@ -65,6 +86,7 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pa
           }
         ]}
         data={rows}
+        exportRows={exportRows}
         total={result.total}
         page={result.page}
         pageSize={result.pageSize}

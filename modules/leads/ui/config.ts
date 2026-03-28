@@ -39,6 +39,7 @@ export const leadListConfig: ListPageConfig = {
   ],
   sortOptions: [
     { label: "创建时间", value: "createdAt" },
+    { label: "更新时间", value: "updatedAt" },
     { label: "预计关闭时间", value: "expectedCloseDate" },
     { label: "预计金额", value: "expectedAmount" },
     { label: "线索标题", value: "title" }

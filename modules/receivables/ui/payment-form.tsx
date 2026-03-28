@@ -8,6 +8,7 @@ import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getUserFriendlyError, type ApiErrorPayload } from "@/lib/ui-error";
 
 export function ReceivablePaymentForm({
   receivableId,
@@ -38,9 +39,9 @@ export function ReceivablePaymentForm({
                   receivedDate: formData.get("receivedDate")
                 })
               });
-              const payload = await response.json();
+              const payload = (await response.json()) as ApiErrorPayload;
               if (!response.ok) {
-                setError(payload.error ?? "维护失败");
+                setError(getUserFriendlyError(payload, "回款更新失败，请稍后重试"));
                 return;
               }
               router.refresh();

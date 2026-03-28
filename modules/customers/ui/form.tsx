@@ -28,7 +28,11 @@ export function CustomerForm({ mode, defaultValues, customerId }: CustomerFormPr
       submitUrl={mode === "create" ? "/api/customers" : `/api/customers/${customerId}`}
       submitMethod={mode === "create" ? "POST" : "PUT"}
       submitLabel={mode === "create" ? "创建客户" : "保存修改"}
-      successHref={mode === "create" ? "/customers" : `/customers/${customerId}`}
+      successHref={
+        mode === "create"
+          ? (payload) => (payload.data?.id ? `/customers/${payload.data.id}` : "/customers")
+          : `/customers/${customerId}`
+      }
     />
   );
 }

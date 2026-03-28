@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, LogOut, Settings, UserCircle2 } from "lucide-react";
 
 import type { SessionUser } from "@/lib/auth";
-import { roleLabels } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 function getInitials(name: string) {
@@ -43,7 +42,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
       <div className="absolute right-0 z-20 mt-2 w-[220px] rounded-[12px] border border-[rgba(229,231,235,0.96)] bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
         <div className="rounded-[10px] px-3 py-2.5">
           <div className="text-sm font-medium text-foreground">{user.name}</div>
-          <div className="mt-1 text-xs text-muted-foreground">{roleLabels[user.role]}</div>
+          <div className="mt-1 text-xs text-muted-foreground">{user.roleName}</div>
         </div>
 
         <div className="my-1 h-px bg-[rgba(229,231,235,0.9)]" />
@@ -54,7 +53,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
         >
           <span className="inline-flex items-center gap-2 text-sm text-foreground">
             <UserCircle2 className="h-4 w-4 text-muted-foreground" />
-            个人中心
+            个人信息
           </span>
           <span className="text-xs text-muted-foreground">即将开放</span>
         </button>

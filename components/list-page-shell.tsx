@@ -5,20 +5,7 @@ import Link from "next/link";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import {
-  ArrowUpDown,
-  Check,
-  ChevronDown,
-  Columns3,
-  Download,
-  Ellipsis,
-  Filter,
-  Plus,
-  RotateCcw,
-  Search,
-  Upload,
-  X
-} from "lucide-react";
+import { ArrowUpDown, ChevronDown, Columns3, Download, Filter, Plus, RotateCcw, Search, X } from "lucide-react";
 
 import { DataTable, type DataColumn } from "@/components/data-table";
 import {
@@ -38,11 +25,13 @@ import type { ListFilters, ListHeaderTabItem, ListPageConfig, ListSortOrder } fr
 type ListPageShellProps<T extends Record<string, unknown>> = {
   config: ListPageConfig;
   data: T[];
+  exportRows?: T[];
   total: number;
   page: number;
   pageSize: number;
   totalPages: number;
   tabs?: ListHeaderTabItem[];
+  canCreate?: boolean;
 };
 
 function formatCsvValue(value: unknown) {
@@ -245,72 +234,6 @@ export function SortSelector({
   );
 }
 
-function ImportActionDialog({ moduleLabel }: { moduleLabel: string }) {
-  const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messageTone, setMessageTone] = useState<"muted" | "warning" | "success">("muted");
-  const fileSchema = z.object({
-    fileName: z.string().refine((value) => /\.(csv|xlsx)$/i.test(value), "仅支持 csv 或 xlsx 文件")
-  });
-
-  return (
-    <>
-      <Button variant="action" type="button" onClick={() => setOpen(true)}>
-        <Upload className="h-4 w-4" />
-        导入
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-[min(92vw,520px)] rounded-[18px]">
-          <DialogHeader>
-            <DialogTitle>{moduleLabel}导入</DialogTitle>
-            <DialogDescription>统一导入入口已接入，当前阶段提供文件校验和交互反馈。</DialogDescription>
-          </DialogHeader>
-          <form
-            className="mt-6 space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const formData = new FormData(event.currentTarget);
-              const file = formData.get("file");
-              const result = fileSchema.safeParse({
-                fileName: file instanceof File ? file.name : ""
-              });
-
-              if (!result.success) {
-                setMessageTone("warning");
-                setMessage(result.error.issues[0]?.message ?? "文件校验失败");
-                return;
-              }
-
-              setMessageTone("success");
-              setMessage(`${moduleLabel}导入能力建设中，当前文件已通过基础校验。`);
-            }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="import-file">上传文件</Label>
-              <Input id="import-file" name="file" type="file" accept=".csv,.xlsx" />
-            </div>
-            {message ? (
-              <div
-                className={cn(
-                  "rounded-[10px] px-3 py-2 text-sm",
-                  messageTone === "success"
-                    ? "bg-[rgba(16,185,129,0.08)] text-[rgb(4,120,87)]"
-                    : "bg-[rgba(245,158,11,0.08)] text-[rgb(180,83,9)]"
-                )}
-              >
-                {message}
-              </div>
-            ) : null}
-            <div className="flex justify-end">
-              <Button type="submit">开始导入</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
 export function ExportAction<T extends Record<string, unknown>>({
   rows,
   columns,
@@ -334,16 +257,18 @@ export function ExportAction<T extends Record<string, unknown>>({
 
 export function ListPrimaryActions<T extends Record<string, unknown>>({
   config,
+  canCreate = true,
   visibleColumns,
   rows
 }: {
   config: ListPageConfig;
+  canCreate?: boolean;
   visibleColumns: DataColumn[];
   rows: T[];
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      {config.createLabel && config.createHref ? (
+      {canCreate && config.createLabel && config.createHref ? (
         <Button asChild className="h-9 rounded-[10px] px-4 font-medium">
           <Link href={config.createHref}>
             <Plus className="h-4 w-4" />
@@ -351,32 +276,7 @@ export function ListPrimaryActions<T extends Record<string, unknown>>({
           </Link>
         </Button>
       ) : null}
-      <ImportActionDialog moduleLabel={config.moduleLabel} />
       <ExportAction rows={rows} columns={visibleColumns} exportFileName={config.exportFileName} />
-      <ListMenu icon={Ellipsis} label="更多" variant="action">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between rounded-[10px] px-3 py-2 text-sm text-foreground transition hover:bg-[var(--color-hover)]"
-          onClick={() => exportRowsAsCsv(rows, visibleColumns, `${config.exportFileName}-batch`)}
-        >
-          <span>批量导出</span>
-          <Check className="h-4 w-4 text-[var(--color-primary)]" />
-        </button>
-        <button
-          type="button"
-          className="mt-1 w-full rounded-[10px] px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-[var(--color-hover)] hover:text-foreground"
-          onClick={() => window.alert("批量删除能力预留中，后续将接入勾选行与权限控制。")}
-        >
-          批量删除（预留）
-        </button>
-        <button
-          type="button"
-          className="mt-1 w-full rounded-[10px] px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-[var(--color-hover)] hover:text-foreground"
-          onClick={() => window.alert("批量状态更新能力预留中，后续将接入批量操作流程。")}
-        >
-          批量状态更新（预留）
-        </button>
-      </ListMenu>
     </div>
   );
 }
@@ -523,7 +423,7 @@ export function ListToolbar({
 
   return (
     <div className="flex flex-1 flex-wrap items-center justify-end gap-2.5">
-      <div className="relative w-[260px] min-w-[220px]">
+      <div className="relative w-[420px] min-w-[320px] max-w-full">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchDraft}
@@ -535,7 +435,7 @@ export function ListToolbar({
             }
           }}
           placeholder={config.searchPlaceholder}
-          className="pl-9 pr-9"
+          className="h-11 pl-10 pr-9 text-[15px]"
         />
         {searchDraft ? (
           <button
@@ -650,11 +550,13 @@ export function ListPagination({
 export function ListPageShell<T extends Record<string, unknown>>({
   config,
   data,
+  exportRows,
   total,
   page,
   pageSize,
   totalPages,
-  tabs = []
+  tabs = [],
+  canCreate = true
 }: ListPageShellProps<T>) {
   const {
     query,
@@ -698,8 +600,13 @@ export function ListPageShell<T extends Record<string, unknown>>({
 
   const visibleColumns = useMemo(() => {
     const filtered = config.columns.filter((column) => visibleColumnKeys.includes(column.key));
-    return filtered.length ? filtered : [config.columns[0]];
+    const baseColumns = filtered.length ? filtered : [config.columns[0]];
+    return [...baseColumns, { key: "__actions", header: "操作", type: "actions" as const }];
   }, [config.columns, visibleColumnKeys]);
+  const exportableColumns = useMemo(
+    () => visibleColumns.filter((column) => column.type !== "actions"),
+    [visibleColumns]
+  );
 
   function toggleColumn(key: string) {
     setVisibleColumnKeys((current) => {
@@ -719,7 +626,12 @@ export function ListPageShell<T extends Record<string, unknown>>({
     <section className="workspace-panel overflow-hidden">
       {tabs.length ? <ListHeaderTabs tabs={tabs} /> : null}
       <div className="flex flex-col gap-4 px-6 py-4 xl:flex-row xl:items-center xl:justify-between">
-        <ListPrimaryActions config={config} visibleColumns={visibleColumns} rows={data} />
+        <ListPrimaryActions
+          config={config}
+          canCreate={canCreate}
+          visibleColumns={exportableColumns}
+          rows={exportRows ?? data}
+        />
         <ListToolbar
           config={config}
           query={query}

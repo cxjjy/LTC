@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Noto_Sans_SC } from "next/font/google";
 
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
-
-const notoSans = Noto_Sans_SC({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-noto-sans-sc"
-});
 
 export const metadata: Metadata = {
   title: "LTC项目管理",
@@ -20,8 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className={notoSans.variable}>
-      <body>{children}</body>
+    <html lang="zh-CN">
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

@@ -23,6 +23,20 @@ class LeadService extends BaseCrudService<unknown> {
     super(leadRepository, "lead", EntityType.LEAD);
   }
 
+  protected override async assertCanSoftDelete(record: unknown) {
+    const lead = record as { id: string };
+    const opportunity = await prisma.opportunity.findFirst({
+      where: {
+        leadId: lead.id,
+        isDeleted: false
+      }
+    });
+
+    if (opportunity) {
+      throw badRequest("当前线索已转商机，不能直接删除");
+    }
+  }
+
   async list(params: Required<ListParams>, user: SessionUser) {
     assertCanAccessRecord(user, "lead", "view");
     const filters = params.filters;
@@ -78,6 +92,7 @@ class LeadService extends BaseCrudService<unknown> {
     };
     const orderByMap: Record<string, Prisma.LeadOrderByWithRelationInput> = {
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       expectedCloseDate: { expectedCloseDate: params.sortOrder },
       expectedAmount: { expectedAmount: params.sortOrder },
       title: { title: params.sortOrder }

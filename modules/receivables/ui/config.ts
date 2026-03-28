@@ -40,14 +40,15 @@ export const receivableListConfig: ListPageConfig = {
     { name: "maxAmount", label: "最大金额", type: "number", placeholder: "例如 200000" }
   ],
   sortOptions: [
-    { label: "应收日期", value: "dueDate" },
     { label: "创建时间", value: "createdAt" },
+    { label: "更新时间", value: "updatedAt" },
+    { label: "应收日期", value: "dueDate" },
     { label: "应收金额", value: "amountDue" },
     { label: "实收金额", value: "amountReceived" }
   ],
   defaultSort: {
-    sortBy: "dueDate",
-    sortOrder: "asc"
+    sortBy: "createdAt",
+    sortOrder: "desc"
   },
   emptyText: "暂无回款数据"
 };

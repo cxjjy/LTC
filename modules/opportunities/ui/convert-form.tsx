@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { getUserFriendlyError, type ApiErrorPayload, type ApiSuccessPayload } from "@/lib/ui-error";
 
 export function OpportunityConvertForm({
   opportunityId,
@@ -43,13 +44,13 @@ export function OpportunityConvertForm({
                 })
               });
 
-              const payload = await response.json();
+              const payload = (await response.json()) as ApiErrorPayload | ApiSuccessPayload<{ id: string }>;
               if (!response.ok) {
-                setError(payload.error ?? "转换失败");
+                setError(getUserFriendlyError(payload, "转换失败，请稍后重试"));
                 return;
               }
 
-              router.push(`/projects/${payload.data.id}`);
+              router.push(`/projects/${(payload as ApiSuccessPayload<{ id: string }>).data?.id}`);
               router.refresh();
             });
           }}

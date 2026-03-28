@@ -32,7 +32,11 @@ export function DeliveryForm({ mode, defaultValues, projectOptions, deliveryId }
       submitUrl={mode === "create" ? "/api/deliveries" : `/api/deliveries/${deliveryId}`}
       submitMethod={mode === "create" ? "POST" : "PUT"}
       submitLabel={mode === "create" ? "创建交付" : "保存修改"}
-      successHref={mode === "create" ? "/deliveries" : `/deliveries/${deliveryId}`}
+      successHref={
+        mode === "create"
+          ? (payload) => (payload.data?.id ? `/deliveries/${payload.data.id}` : "/deliveries")
+          : `/deliveries/${deliveryId}`
+      }
     />
   );
 }

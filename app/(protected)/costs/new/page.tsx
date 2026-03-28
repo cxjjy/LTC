@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { CostForm } from "@/modules/costs/ui/form";
 import { projectService } from "@/modules/projects/service";
 
 export default async function NewCostPage() {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "cost", "create");
   const projectOptions = await projectService.getOptions(user);
 
   return (

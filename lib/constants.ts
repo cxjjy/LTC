@@ -5,20 +5,14 @@ import type {
   LeadStatus,
   OpportunityStage,
   ProjectStatus,
-  ReceivableStatus,
-  UserRole
+  ReceivableStatus
 } from "@prisma/client";
+import { roleLabelMap, type RoleCode } from "@/lib/permissions";
 
 export const PAGE_SIZE = 10;
 export const SESSION_COOKIE_NAME = "ltc_session";
 
-export const roleLabels: Record<UserRole, string> = {
-  ADMIN: "管理员",
-  SALES: "销售",
-  PM: "项目经理",
-  DELIVERY: "交付",
-  FINANCE: "财务"
-};
+export const roleLabels: Record<RoleCode, string> = roleLabelMap;
 
 export const leadStatusLabels: Record<LeadStatus, string> = {
   NEW: "新建",

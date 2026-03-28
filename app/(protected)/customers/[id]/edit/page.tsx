@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { customerService } from "@/modules/customers/service";
 import { CustomerForm } from "@/modules/customers/ui/form";
 
 export default async function EditCustomerPage({ params }: { params: { id: string } }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "customer", "update");
   const customer = (await customerService.getDetail(params.id, user)) as any;
 
   return (

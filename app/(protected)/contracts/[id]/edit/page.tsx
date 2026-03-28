@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { projectService } from "@/modules/projects/service";
 import { decimalToNumber } from "@/modules/core/decimal";
 import { contractService } from "@/modules/contracts/service";
@@ -7,7 +8,7 @@ import { ContractForm } from "@/modules/contracts/ui/form";
 import { toDateInputValue } from "@/lib/utils";
 
 export default async function EditContractPage({ params }: { params: { id: string } }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "contract", "update");
   const contract = (await contractService.getDetail(params.id, user)) as any;
   const projectOptions = await projectService.getOptions(user);
 

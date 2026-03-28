@@ -39,6 +39,7 @@ export const projectListConfig: ListPageConfig = {
   ],
   sortOptions: [
     { label: "创建时间", value: "createdAt" },
+    { label: "更新时间", value: "updatedAt" },
     { label: "计划开始时间", value: "plannedStartDate" },
     { label: "计划结束时间", value: "plannedEndDate" },
     { label: "预算金额", value: "budgetAmount" }

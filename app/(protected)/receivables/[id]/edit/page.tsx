@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { contractService } from "@/modules/contracts/service";
 import { decimalToNumber } from "@/modules/core/decimal";
 import { receivableService } from "@/modules/receivables/service";
@@ -7,7 +8,7 @@ import { ReceivableForm } from "@/modules/receivables/ui/form";
 import { toDateInputValue } from "@/lib/utils";
 
 export default async function EditReceivablePage({ params }: { params: { id: string } }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "receivable", "update");
   const receivable = (await receivableService.getDetail(params.id, user)) as any;
   const contractOptions = await contractService.getOptions(user);
 

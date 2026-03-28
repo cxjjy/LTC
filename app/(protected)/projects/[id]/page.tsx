@@ -13,6 +13,7 @@ import {
 } from "@prisma/client";
 
 import { DetailGrid } from "@/components/detail-grid";
+import { DeleteAction } from "@/components/delete-action";
 import { LtcChain } from "@/components/ltc-chain";
 import { PageShell } from "@/components/page-shell";
 import { ProjectMetricsStrip } from "@/components/project-metrics-strip";
@@ -36,7 +37,9 @@ import {
   projectStatusLabels,
   receivableStatusLabels
 } from "@/lib/constants";
+import { getDeleteCopy } from "@/lib/delete-config";
 import { prisma } from "@/lib/prisma";
+import { canAccessRecord, requirePagePermission } from "@/lib/rbac";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 import { auditLogModuleService } from "@/modules/audit-logs/service";
 import { decimalToNumber, sumDecimalValues } from "@/modules/core/decimal";
@@ -105,12 +108,20 @@ export default async function ProjectDetailPage({
   params: { id: string };
   searchParams: PageSearchParams;
 }) {
-  const user = await requireSessionUser();
-  const activeTab = detailTabs.some((item) => item.key === searchParams.tab)
+  const user = await requirePagePermission(requireSessionUser(), "project", "view");
+  const canUpdate = canAccessRecord(user, "project", "update");
+  const canDelete = canAccessRecord(user, "project", "delete");
+  const canChangeStatus = canAccessRecord(user, "project", "status");
+  const canViewAuditLog = canAccessRecord(user, "auditLog", "view");
+  const deleteCopy = getDeleteCopy("project");
+  const visibleDetailTabs = canViewAuditLog ? detailTabs : detailTabs.filter((item) => item.key !== "logs");
+  const activeTab = visibleDetailTabs.some((item) => item.key === searchParams.tab)
     ? (searchParams.tab as DetailTab)
     : "contracts";
   const project = (await projectService.getDetail(params.id, user)) as any;
-  const audits = (await auditLogModuleService.listByEntity("PROJECT", project.id, user)) as any[];
+  const audits = canViewAuditLog
+    ? ((await auditLogModuleService.listByEntity("PROJECT", project.id, user)) as any[])
+    : [];
   const users = await prisma.user.findMany({
     where: {
       id: {
@@ -183,14 +194,29 @@ export default async function ProjectDetailPage({
       title={project.name}
       description="项目经营控制中心，围绕收入、成本、回款、交付和风险统一查看。"
       breadcrumbs={[
-        { label: "项目与交付" },
         { label: "项目管理", href: "/projects" },
-        { label: project.name }
+        { label: project.code }
       ]}
+      backHref="/projects"
+      backLabel="项目管理"
+      backInActions
       headerAction={
-        <Button asChild>
-          <Link href={`/projects/${project.id}/edit`}>编辑项目</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {canUpdate ? (
+            <Button asChild>
+              <Link href={`/projects/${project.id}/edit`}>编辑项目</Link>
+            </Button>
+          ) : null}
+          {canDelete ? (
+            <DeleteAction
+              moduleLabel={deleteCopy.moduleLabel}
+              recordLabel={`${project.code} / ${project.name}`}
+              endpoint={`/api/projects/${project.id}`}
+              warning={deleteCopy.warning}
+              redirectTo={deleteCopy.listPath}
+            />
+          ) : null}
+        </div>
       }
     >
       <div className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
@@ -243,7 +269,9 @@ export default async function ProjectDetailPage({
         </div>
 
         <div className="space-y-4">
-          <ProjectStatusForm projectId={project.id} currentStatus={project.status} options={projectStatusOptions} />
+          {canChangeStatus ? (
+            <ProjectStatusForm projectId={project.id} currentStatus={project.status} options={projectStatusOptions} />
+          ) : null}
           <SectionCard title="经营提示" description="围绕资金、交付和成本快速识别当前风险。">
             <div className="space-y-3">
               <div className="rounded-[12px] border border-border bg-[var(--color-background)] p-4">
@@ -291,7 +319,7 @@ export default async function ProjectDetailPage({
 
       <section className="workspace-panel overflow-hidden">
         <div className="flex items-center gap-7 border-b border-[rgba(229,231,235,0.9)] px-6">
-          {detailTabs.map((tab) => (
+          {visibleDetailTabs.map((tab) => (
             <Link
               key={tab.key}
               href={buildTabHref(project.id, tab.key)}

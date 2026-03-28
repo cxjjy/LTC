@@ -31,7 +31,11 @@ export function ProjectForm({ mode, defaultValues, opportunityOptions, projectId
       submitUrl={mode === "create" ? "/api/projects" : `/api/projects/${projectId}`}
       submitMethod={mode === "create" ? "POST" : "PUT"}
       submitLabel={mode === "create" ? "创建项目" : "保存修改"}
-      successHref={mode === "create" ? "/projects" : `/projects/${projectId}`}
+      successHref={
+        mode === "create"
+          ? (payload) => (payload.data?.id ? `/projects/${payload.data.id}` : "/projects")
+          : `/projects/${projectId}`
+      }
     />
   );
 }

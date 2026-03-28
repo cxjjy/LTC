@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { customerService } from "@/modules/customers/service";
 import { LeadForm } from "@/modules/leads/ui/form";
 import { decimalToNumber } from "@/modules/core/decimal";
@@ -7,7 +8,7 @@ import { leadService } from "@/modules/leads/service";
 import { toDateInputValue } from "@/lib/utils";
 
 export default async function EditLeadPage({ params }: { params: { id: string } }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "lead", "update");
   const lead = (await leadService.getDetail(params.id, user)) as any;
   const customerOptions = await customerService.getOptions(user);
 

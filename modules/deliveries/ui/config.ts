@@ -38,13 +38,14 @@ export const deliveryListConfig: ListPageConfig = {
     { name: "plannedTo", label: "计划结束", type: "date" }
   ],
   sortOptions: [
-    { label: "计划结束时间", value: "plannedDate" },
     { label: "创建时间", value: "createdAt" },
+    { label: "更新时间", value: "updatedAt" },
+    { label: "计划结束时间", value: "plannedDate" },
     { label: "交付标题", value: "title" }
   ],
   defaultSort: {
-    sortBy: "plannedDate",
-    sortOrder: "asc"
+    sortBy: "createdAt",
+    sortOrder: "desc"
   },
   emptyText: "暂无交付数据"
 };

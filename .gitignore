@@ -1,7 +1,8 @@
-.next
 node_modules
+.next
 .env
-dist
+.env.local
 coverage
+dist
 *.log
-tmp
+public/uploads

@@ -25,6 +25,8 @@ export abstract class BaseCrudService<T> {
     protected readonly entityType: EntityType
   ) {}
 
+  protected async assertCanSoftDelete(_record: T, _user: SessionUser) {}
+
   async getById(id: string, user: SessionUser, include?: Record<string, unknown>) {
     assertCanAccessRecord(user, this.resourceName, "view");
     const record = await this.repository.findById(id, include);
@@ -42,13 +44,26 @@ export abstract class BaseCrudService<T> {
       throw notFound();
     }
 
+    await this.assertCanSoftDelete(record, user);
+
     const deleted = await this.repository.softDelete(id, user.id);
+    const currentRecord = record as Record<string, unknown>;
+    const payload = JSON.parse(
+      JSON.stringify({
+        beforeData: currentRecord,
+        operatorId: user.id,
+        operatorName: user.name
+      })
+    );
+
     await auditLogService.log({
       entityType: this.entityType,
       entityId: id,
+      entityCode: typeof currentRecord.code === "string" ? currentRecord.code : undefined,
       action: "SOFT_DELETE",
       actorId: user.id,
-      message: "软删除记录"
+      message: "删除记录",
+      payload
     });
     return deleted;
   }

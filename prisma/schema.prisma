@@ -13,6 +13,9 @@ enum UserRole {
   PM
   DELIVERY
   FINANCE
+  SUPER_ADMIN
+  PROJECT_MANAGER
+  VIEWER
 }
 
 enum LeadStatus {
@@ -81,6 +84,8 @@ enum AuditAction {
 
 enum EntityType {
   USER
+  ROLE
+  PERMISSION
   CUSTOMER
   LEAD
   OPPORTUNITY
@@ -97,12 +102,78 @@ model User {
   username     String   @unique @db.VarChar(100)
   passwordHash String   @db.VarChar(255)
   name         String   @db.VarChar(100)
-  role         UserRole
+  role         UserRole @default(ADMIN)
+  email        String?  @unique @db.VarChar(191)
+  phone        String?  @db.VarChar(50)
   isActive     Boolean  @default(true)
+  isDeleted    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  userRoles    UserRoleAssignment[]
 
   @@index([role])
+  @@index([isActive])
+  @@index([isDeleted])
+}
+
+model Role {
+  id              String                    @id @default(cuid())
+  code            String                    @unique @db.VarChar(100)
+  name            String                    @db.VarChar(100)
+  description     String?                   @db.VarChar(255)
+  isSystem        Boolean                   @default(false)
+  isDeleted       Boolean                   @default(false)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  userRoles       UserRoleAssignment[]
+  rolePermissions RolePermissionAssignment[]
+
+  @@map("roles")
+  @@index([isDeleted])
+}
+
+model Permission {
+  id              String                    @id @default(cuid())
+  code            String                    @unique @db.VarChar(100)
+  name            String                    @db.VarChar(100)
+  module          String                    @db.VarChar(100)
+  action          String                    @db.VarChar(50)
+  description     String?                   @db.VarChar(255)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  rolePermissions RolePermissionAssignment[]
+
+  @@index([module])
+  @@index([action])
+  @@map("permissions")
+}
+
+model UserRoleAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermissionAssignment {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
 }
 
 model Customer {
@@ -166,6 +237,15 @@ model Opportunity {
   name             String           @db.VarChar(200)
   description      String?          @db.Text
   amount           Decimal          @db.Decimal(18, 2)
+  estimatedRevenue Decimal          @default(0) @db.Decimal(18, 2)
+  estimatedLaborCost Decimal        @default(0) @db.Decimal(18, 2)
+  estimatedOutsourceCost Decimal    @default(0) @db.Decimal(18, 2)
+  estimatedProcurementCost Decimal  @default(0) @db.Decimal(18, 2)
+  estimatedTravelCost Decimal       @default(0) @db.Decimal(18, 2)
+  estimatedOtherCost Decimal        @default(0) @db.Decimal(18, 2)
+  estimatedTotalCost Decimal        @default(0) @db.Decimal(18, 2)
+  estimatedProfit Decimal           @default(0) @db.Decimal(18, 2)
+  estimatedProfitMargin Decimal     @default(0) @db.Decimal(18, 4)
   expectedSignDate DateTime?
   winRate          Int              @default(0)
   stage            OpportunityStage @default(DISCOVERY)
@@ -233,10 +313,27 @@ model Contract {
   customer    Customer      @relation(fields: [customerId], references: [id])
   project     Project       @relation(fields: [projectId], references: [id])
   receivables Receivable[]
+  attachments ContractAttachment[]
 
   @@index([customerId, isDeleted])
   @@index([projectId, isDeleted])
   @@index([status, isDeleted])
+}
+
+model ContractAttachment {
+  id         String   @id @default(cuid())
+  contractId String
+  fileName   String   @db.VarChar(255)
+  fileUrl    String   @db.VarChar(500)
+  filePath   String   @db.VarChar(500)
+  fileSize   Int
+  fileType   String   @db.VarChar(100)
+  createdAt  DateTime @default(now())
+  uploadedBy String   @db.VarChar(191)
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId, createdAt])
 }
 
 model Delivery {

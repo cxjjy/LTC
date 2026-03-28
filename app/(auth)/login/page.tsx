@@ -31,6 +31,25 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
+  function normalizeLoginError(payload: { error?: string; issues?: Array<{ message?: string }> }) {
+    if (payload.issues?.[0]?.message) {
+      return payload.issues[0].message;
+    }
+
+    switch (payload.error) {
+      case "请求参数校验失败":
+        return "请输入用户名和密码";
+      case "用户名或密码错误":
+        return "用户名或密码不正确，请重新输入";
+      case "请先登录":
+        return "登录状态已失效，请重新登录";
+      case "服务器内部错误":
+        return "登录暂时不可用，请稍后重试";
+      default:
+        return payload.error || "登录失败，请稍后重试";
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f6f8]">
       <div className="flex min-h-screen">
@@ -96,20 +115,41 @@ export default function LoginPage() {
                   event.preventDefault();
                   setError("");
                   const formData = new FormData(event.currentTarget);
+                  const username = String(formData.get("username") ?? "").trim();
+                  const password = String(formData.get("password") ?? "");
+
+                  if (!username && !password) {
+                    setError("请输入用户名和密码");
+                    return;
+                  }
+
+                  if (!username) {
+                    setError("请输入用户名");
+                    return;
+                  }
+
+                  if (!password) {
+                    setError("请输入密码");
+                    return;
+                  }
 
                   startTransition(async () => {
                     const response = await fetch("/api/auth/login", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
-                        username: formData.get("username"),
-                        password: formData.get("password")
+                        username,
+                        password
                       })
                     });
-                    const payload = await response.json();
+                    const payload = (await response.json()) as {
+                      success?: boolean;
+                      error?: string;
+                      issues?: Array<{ message?: string }>;
+                    };
 
                     if (!response.ok) {
-                      setError(payload.error ?? "登录失败");
+                      setError(normalizeLoginError(payload));
                       return;
                     }
 
@@ -120,12 +160,18 @@ export default function LoginPage() {
               >
                 <div className="grid gap-2">
                   <Label htmlFor="username">用户名</Label>
-                  <Input id="username" name="username" placeholder="例如：admin" />
+                  <Input id="username" name="username" placeholder="例如：admin" autoComplete="username" />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="password">密码</Label>
-                  <Input id="password" name="password" type="password" placeholder="请输入密码" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="请输入密码"
+                    autoComplete="current-password"
+                  />
                 </div>
 
                 {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -136,7 +182,7 @@ export default function LoginPage() {
                 </Button>
 
                 <div className="rounded-[10px] bg-[#f8fafc] px-4 py-3 text-sm leading-7 text-muted-foreground">
-                  默认账号：`admin` / `sales` / `pm` / `delivery` / `finance`
+                  默认账号：`admin` / `sales` / `pm` / `delivery` / `finance` / `viewer`
                   <br />
                   默认密码：`123456`
                 </div>

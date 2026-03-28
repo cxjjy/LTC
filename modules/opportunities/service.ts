@@ -9,11 +9,12 @@ import {
 } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { assertCanAccessRecord } from "@/lib/rbac";
-import { notFound } from "@/lib/errors";
+import { badRequest, notFound } from "@/lib/errors";
 import { auditLogService } from "@/modules/core/audit-log.service";
 import { BaseCrudService } from "@/modules/core/base-crud-service";
 import { generateBusinessCode } from "@/modules/core/code-generator.service";
 import { toDecimal } from "@/modules/core/decimal";
+import { calculateOpportunityEstimate } from "@/modules/opportunities/profit";
 import type {
   CreateOpportunityDto,
   ConvertOpportunityDto,
@@ -24,6 +25,20 @@ import { opportunityRepository } from "@/modules/opportunities/repository";
 class OpportunityService extends BaseCrudService<unknown> {
   constructor() {
     super(opportunityRepository, "opportunity", EntityType.OPPORTUNITY);
+  }
+
+  protected override async assertCanSoftDelete(record: unknown) {
+    const opportunity = record as { id: string };
+    const project = await prisma.project.findFirst({
+      where: {
+        opportunityId: opportunity.id,
+        isDeleted: false
+      }
+    });
+
+    if (project) {
+      throw badRequest("当前商机已转项目，不能直接删除");
+    }
   }
 
   async list(params: Required<ListParams>, user: SessionUser) {
@@ -71,6 +86,7 @@ class OpportunityService extends BaseCrudService<unknown> {
     const orderByMap: Record<string, Prisma.OpportunityOrderByWithRelationInput> = {
       expectedSignDate: { expectedSignDate: params.sortOrder },
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       amount: { amount: params.sortOrder },
       winRate: { winRate: params.sortOrder },
       name: { name: params.sortOrder }
@@ -86,7 +102,7 @@ class OpportunityService extends BaseCrudService<unknown> {
           where: { isDeleted: false }
         }
       },
-      orderBy: orderByMap[params.sortBy] ?? { expectedSignDate: "desc" },
+      orderBy: orderByMap[params.sortBy] ?? { createdAt: "desc" },
       skip: (params.page - 1) * params.pageSize,
       take: params.pageSize
     });
@@ -100,10 +116,20 @@ class OpportunityService extends BaseCrudService<unknown> {
   async create(data: CreateOpportunityDto, user: SessionUser) {
     assertCanAccessRecord(user, "opportunity", "create");
     const code = await generateBusinessCode(EntityType.OPPORTUNITY);
+    const estimate = calculateOpportunityEstimate(data);
 
     const record = await opportunityRepository.create({
       ...data,
-      amount: toDecimal(data.amount),
+      amount: toDecimal(estimate.estimatedRevenue),
+      estimatedRevenue: toDecimal(estimate.estimatedRevenue),
+      estimatedLaborCost: toDecimal(estimate.estimatedLaborCost),
+      estimatedOutsourceCost: toDecimal(estimate.estimatedOutsourceCost),
+      estimatedProcurementCost: toDecimal(estimate.estimatedProcurementCost),
+      estimatedTravelCost: toDecimal(estimate.estimatedTravelCost),
+      estimatedOtherCost: toDecimal(estimate.estimatedOtherCost),
+      estimatedTotalCost: toDecimal(estimate.estimatedTotalCost),
+      estimatedProfit: toDecimal(estimate.estimatedProfit),
+      estimatedProfitMargin: toDecimal(estimate.estimatedProfitMargin / 100),
       winRate: data.winRate ?? 0,
       stage: data.stage ?? OpportunityStage.DISCOVERY,
       code,
@@ -131,9 +157,19 @@ class OpportunityService extends BaseCrudService<unknown> {
     }
 
     const previousStage = (existing as { stage: OpportunityStage }).stage;
+    const estimate = calculateOpportunityEstimate(data);
     const record = await opportunityRepository.update(id, {
       ...data,
-      amount: toDecimal(data.amount),
+      amount: toDecimal(estimate.estimatedRevenue),
+      estimatedRevenue: toDecimal(estimate.estimatedRevenue),
+      estimatedLaborCost: toDecimal(estimate.estimatedLaborCost),
+      estimatedOutsourceCost: toDecimal(estimate.estimatedOutsourceCost),
+      estimatedProcurementCost: toDecimal(estimate.estimatedProcurementCost),
+      estimatedTravelCost: toDecimal(estimate.estimatedTravelCost),
+      estimatedOtherCost: toDecimal(estimate.estimatedOtherCost),
+      estimatedTotalCost: toDecimal(estimate.estimatedTotalCost),
+      estimatedProfit: toDecimal(estimate.estimatedProfit),
+      estimatedProfitMargin: toDecimal(estimate.estimatedProfitMargin / 100),
       winRate: data.winRate ?? 0,
       updatedBy: user.id
     });

@@ -9,7 +9,7 @@ export function AppShell({ user, children }: { user: SessionUser; children: Reac
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
       <div className="page-shell flex min-h-screen">
-        <AppSidebar />
+        <AppSidebar user={user} />
         <main className="min-w-0 flex-1">
           <TopNavbar user={user} />
           <PageContainer>{children}</PageContainer>

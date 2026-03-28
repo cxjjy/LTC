@@ -10,12 +10,13 @@ import {
 } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { assertCanAccessRecord } from "@/lib/rbac";
-import { notFound } from "@/lib/errors";
+import { badRequest, notFound } from "@/lib/errors";
 import { auditLogService } from "@/modules/core/audit-log.service";
 import { BaseCrudService } from "@/modules/core/base-crud-service";
 import { generateBusinessCode } from "@/modules/core/code-generator.service";
 import { toDecimal } from "@/modules/core/decimal";
 import { assertContractStatusTransition } from "@/modules/core/status-transition-validator";
+import { contractAttachmentService } from "@/modules/contracts/attachment.service";
 import type {
   ChangeContractStatusDto,
   CreateContractDto,
@@ -26,6 +27,20 @@ import { contractRepository } from "@/modules/contracts/repository";
 class ContractService extends BaseCrudService<unknown> {
   constructor() {
     super(contractRepository, "contract", EntityType.CONTRACT);
+  }
+
+  protected override async assertCanSoftDelete(record: unknown) {
+    const contract = record as { id: string };
+    const receivable = await prisma.receivable.findFirst({
+      where: {
+        contractId: contract.id,
+        isDeleted: false
+      }
+    });
+
+    if (receivable) {
+      throw badRequest("当前合同存在回款记录，无法删除");
+    }
   }
 
   async list(params: Required<ListParams>, user: SessionUser) {
@@ -91,6 +106,7 @@ class ContractService extends BaseCrudService<unknown> {
     const orderByMap: Record<string, Prisma.ContractOrderByWithRelationInput> = {
       signedDate: { signedDate: params.sortOrder },
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       contractAmount: { contractAmount: params.sortOrder },
       name: { name: params.sortOrder }
     };
@@ -113,7 +129,7 @@ class ContractService extends BaseCrudService<unknown> {
           where: { isDeleted: false }
         }
       },
-      orderBy: orderByMap[params.sortBy] ?? { signedDate: "desc" },
+      orderBy: orderByMap[params.sortBy] ?? { createdAt: "desc" },
       skip: (params.page - 1) * params.pageSize,
       take: params.pageSize
     });
@@ -126,6 +142,9 @@ class ContractService extends BaseCrudService<unknown> {
 
   async create(data: CreateContractDto, user: SessionUser) {
     assertCanAccessRecord(user, "contract", "create");
+    if (data.status === ContractStatus.EFFECTIVE) {
+      throw badRequest("合同需先上传附件，再变更为已生效");
+    }
     const project = await prisma.project.findFirst({
       where: {
         id: data.projectId,
@@ -179,6 +198,9 @@ class ContractService extends BaseCrudService<unknown> {
     }
 
     const previousStatus = (existing as { status: ContractStatus }).status;
+    if (previousStatus !== ContractStatus.EFFECTIVE && data.status === ContractStatus.EFFECTIVE) {
+      await contractAttachmentService.ensureCanBeEffective(id);
+    }
     const record = await contractRepository.update(id, {
       ...data,
       customerId: project.customerId,
@@ -224,6 +246,10 @@ class ContractService extends BaseCrudService<unknown> {
     const contract = existing as { status: ContractStatus; code: string };
     assertContractStatusTransition(contract.status, data.status);
 
+    if (contract.status !== ContractStatus.EFFECTIVE && data.status === ContractStatus.EFFECTIVE) {
+      await contractAttachmentService.ensureCanBeEffective(id);
+    }
+
     const updated = await contractRepository.update(id, {
       status: data.status,
       effectiveDate: data.status === ContractStatus.EFFECTIVE ? new Date() : undefined,
@@ -262,6 +288,19 @@ class ContractService extends BaseCrudService<unknown> {
       receivables: {
         where: { isDeleted: false },
         orderBy: { dueDate: "asc" }
+      },
+      attachments: {
+        select: {
+          id: true,
+          contractId: true,
+          fileName: true,
+          fileUrl: true,
+          fileSize: true,
+          fileType: true,
+          createdAt: true,
+          uploadedBy: true
+        },
+        orderBy: { createdAt: "desc" }
       }
     });
 

@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { contractService } from "@/modules/contracts/service";
 import { ReceivableForm } from "@/modules/receivables/ui/form";
 
 export default async function NewReceivablePage() {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "receivable", "create");
   const contractOptions = await contractService.getOptions(user);
 
   return (

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 
 const prefixMap: Record<EntityType, string> = {
   USER: "USER",
+  ROLE: "ROLE",
+  PERMISSION: "PERM",
   CUSTOMER: "CUST",
   LEAD: "LEAD",
   OPPORTUNITY: "OPP",

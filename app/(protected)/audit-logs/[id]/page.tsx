@@ -1,11 +1,12 @@
 import { DetailGrid } from "@/components/detail-grid";
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { formatDateTime } from "@/lib/utils";
 import { auditLogModuleService } from "@/modules/audit-logs/service";
 
 export default async function AuditLogDetailPage({ params }: { params: { id: string } }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "auditLog", "view");
   const log = (await auditLogModuleService.getById(params.id, user)) as any;
 
   return (

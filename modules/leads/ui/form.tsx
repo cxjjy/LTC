@@ -34,7 +34,11 @@ export function LeadForm({ mode, defaultValues, customerOptions, leadId }: LeadF
       submitUrl={mode === "create" ? "/api/leads" : `/api/leads/${leadId}`}
       submitMethod={mode === "create" ? "POST" : "PUT"}
       submitLabel={mode === "create" ? "创建线索" : "保存修改"}
-      successHref={mode === "create" ? "/leads" : `/leads/${leadId}`}
+      successHref={
+        mode === "create"
+          ? (payload) => (payload.data?.id ? `/leads/${payload.data.id}` : "/leads")
+          : `/leads/${leadId}`
+      }
     />
   );
 }

@@ -45,6 +45,18 @@ vi.mock("@/modules/core/audit-log.service", () => ({
   }
 }));
 
+function createSessionUser(role: string) {
+  return {
+    id: `${role.toLowerCase()}-1`,
+    username: role.toLowerCase(),
+    name: role,
+    role,
+    roleName: role,
+    roles: [],
+    permissions: []
+  };
+}
+
 describe("LTC 核心服务", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -77,7 +89,7 @@ describe("LTC 核心服务", () => {
     const result = await leadService.convertLeadToOpportunity(
       "lead-1",
       { name: "测试商机", amount: 8000, description: "test" },
-      { id: "sales-1", username: "sales", name: "销售", role: "SALES" }
+      createSessionUser("SALES")
     );
 
     expect(tx.opportunity.create).toHaveBeenCalled();
@@ -115,7 +127,7 @@ describe("LTC 核心服务", () => {
     const result = await opportunityService.convertOpportunityToProject(
       "opp-1",
       { name: "测试项目" },
-      { id: "sales-1", username: "sales", name: "销售", role: "SALES" }
+      createSessionUser("SALES")
     );
 
     expect(tx.project.create).toHaveBeenCalledWith(
@@ -156,7 +168,7 @@ describe("LTC 核心服务", () => {
         dueDate: new Date("2026-03-31"),
         description: "测试"
       },
-      { id: "finance-1", username: "finance", name: "财务", role: "FINANCE" }
+      createSessionUser("FINANCE")
     );
 
     expect(mockPrisma.receivable.create).toHaveBeenCalledWith(

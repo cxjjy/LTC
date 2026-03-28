@@ -1,6 +1,7 @@
 import { ListPageShell } from "@/components/list-page-shell";
 import { PageShell } from "@/components/page-shell";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { buildListHref, normalizeListParams } from "@/lib/pagination";
 import { formatDateTime } from "@/lib/utils";
 import { auditLogModuleService } from "@/modules/audit-logs/service";
@@ -8,19 +9,30 @@ import { auditLogListConfig } from "@/modules/audit-logs/ui/config";
 import type { PageSearchParams } from "@/types/common";
 
 export default async function AuditLogsPage({ searchParams }: { searchParams: PageSearchParams }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "auditLog", "view");
   const params = normalizeListParams(searchParams);
   const view = typeof searchParams.view === "string" ? searchParams.view : "all";
   const result = await auditLogModuleService.list(params, user);
-  const rows = result.items.map((item: any) => ({
+  const exportResult =
+    result.total > result.items.length
+      ? await auditLogModuleService.list({ ...params, page: 1, pageSize: result.total }, user)
+      : result;
+  const mapRow = (item: any) => ({
     createdAt: formatDateTime(item.createdAt),
     entityType: item.entityType,
     entityCode: item.entityCode || item.entityId,
     entityCodeHref: `/audit-logs/${item.id}`,
     action: item.action,
     actorId: item.actorId,
-    message: item.message
-  }));
+    message: item.message,
+    rowActions: {
+      moduleLabel: "审计日志",
+      recordLabel: item.entityCode || item.entityId,
+      viewHref: `/audit-logs/${item.id}`
+    }
+  });
+  const rows = result.items.map(mapRow);
+  const exportRows = exportResult.items.map(mapRow);
 
   return (
     <PageShell
@@ -59,6 +71,7 @@ export default async function AuditLogsPage({ searchParams }: { searchParams: Pa
           }
         ]}
         data={rows}
+        exportRows={exportRows}
         total={result.total}
         page={result.page}
         pageSize={result.pageSize}

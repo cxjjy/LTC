@@ -37,13 +37,14 @@ export const costListConfig: ListPageConfig = {
     { name: "occurredTo", label: "发生结束", type: "date" }
   ],
   sortOptions: [
-    { label: "发生时间", value: "occurredAt" },
     { label: "创建时间", value: "createdAt" },
+    { label: "更新时间", value: "updatedAt" },
+    { label: "发生时间", value: "occurredAt" },
     { label: "金额", value: "amount" },
     { label: "成本标题", value: "title" }
   ],
   defaultSort: {
-    sortBy: "occurredAt",
+    sortBy: "createdAt",
     sortOrder: "desc"
   },
   emptyText: "暂无成本数据"

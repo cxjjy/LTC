@@ -41,13 +41,14 @@ export const contractListConfig: ListPageConfig = {
     { name: "signedTo", label: "签约结束", type: "date" }
   ],
   sortOptions: [
-    { label: "签约时间", value: "signedDate" },
     { label: "创建时间", value: "createdAt" },
+    { label: "更新时间", value: "updatedAt" },
+    { label: "签约时间", value: "signedDate" },
     { label: "合同金额", value: "contractAmount" },
     { label: "合同名称", value: "name" }
   ],
   defaultSort: {
-    sortBy: "signedDate",
+    sortBy: "createdAt",
     sortOrder: "desc"
   },
   emptyText: "暂无合同数据"

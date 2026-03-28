@@ -1,7 +1,27 @@
 import bcrypt from "bcryptjs";
 import { Prisma, UserRole } from "@prisma/client";
 
+import {
+  defaultRolePermissionCodes,
+  permissionDefinitions,
+  ROLE_CODES,
+  roleLabelMap,
+  type RoleCode
+} from "../lib/permissions";
 import { prisma } from "../lib/prisma";
+
+const roleCodeToLegacyRole: Record<RoleCode, UserRole> = {
+  SUPER_ADMIN: UserRole.SUPER_ADMIN,
+  SALES: UserRole.SALES,
+  PROJECT_MANAGER: UserRole.PROJECT_MANAGER,
+  FINANCE: UserRole.FINANCE,
+  DELIVERY: UserRole.DELIVERY,
+  VIEWER: UserRole.VIEWER
+};
+
+function code(prefix: string, year: number, index: number) {
+  return `${prefix}-${year}${String(index).padStart(4, "0")}`;
+}
 
 async function main() {
   const now = new Date();
@@ -9,6 +29,8 @@ async function main() {
   const passwordHash = await bcrypt.hash("123456", 10);
 
   await prisma.auditLog.deleteMany();
+  await prisma.rolePermissionAssignment.deleteMany();
+  await prisma.userRoleAssignment.deleteMany();
   await prisma.receivable.deleteMany();
   await prisma.cost.deleteMany();
   await prisma.delivery.deleteMany();
@@ -18,31 +40,121 @@ async function main() {
   await prisma.lead.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.codeSequence.deleteMany();
+  await prisma.permission.deleteMany();
+  await prisma.role.deleteMany();
   await prisma.user.deleteMany();
+
+  await prisma.permission.createMany({
+    data: permissionDefinitions.map((item) => ({
+      code: item.code,
+      name: item.name,
+      module: item.module,
+      action: item.action,
+      description: item.description
+    }))
+  });
+
+  const permissions = await prisma.permission.findMany({
+    select: {
+      id: true,
+      code: true
+    }
+  });
+  const permissionIdMap = new Map(permissions.map((item) => [item.code, item.id]));
+
+  const roles = await Promise.all(
+    (Object.values(ROLE_CODES) as RoleCode[]).map((roleCode) =>
+      prisma.role.create({
+        data: {
+          code: roleCode,
+          name: roleLabelMap[roleCode],
+          description: `${roleLabelMap[roleCode]}默认系统角色`,
+          isSystem: true,
+          rolePermissions: {
+            create: (defaultRolePermissionCodes[roleCode] ?? []).map((permissionCode) => {
+              const permissionId = permissionIdMap.get(permissionCode);
+
+              if (!permissionId) {
+                throw new Error(`权限不存在：${permissionCode}`);
+              }
+
+              return { permissionId };
+            })
+          }
+        }
+      })
+    )
+  );
+  const roleIdMap = new Map(roles.map((role) => [role.code, role.id]));
 
   const users = await Promise.all(
     [
-      { username: "admin", name: "系统管理员", role: UserRole.ADMIN },
-      { username: "sales", name: "销售演示账号", role: UserRole.SALES },
-      { username: "pm", name: "项目经理演示账号", role: UserRole.PM },
-      { username: "delivery", name: "交付演示账号", role: UserRole.DELIVERY },
-      { username: "finance", name: "财务演示账号", role: UserRole.FINANCE }
+      {
+        username: "admin",
+        name: "系统管理员",
+        email: "admin@ltc.local",
+        phone: "13800000000",
+        roleCode: ROLE_CODES.SUPER_ADMIN
+      },
+      {
+        username: "sales",
+        name: "销售演示账号",
+        email: "sales@ltc.local",
+        phone: "13800000011",
+        roleCode: ROLE_CODES.SALES
+      },
+      {
+        username: "pm",
+        name: "项目经理演示账号",
+        email: "pm@ltc.local",
+        phone: "13800000012",
+        roleCode: ROLE_CODES.PROJECT_MANAGER
+      },
+      {
+        username: "delivery",
+        name: "交付演示账号",
+        email: "delivery@ltc.local",
+        phone: "13800000013",
+        roleCode: ROLE_CODES.DELIVERY
+      },
+      {
+        username: "finance",
+        name: "财务演示账号",
+        email: "finance@ltc.local",
+        phone: "13800000014",
+        roleCode: ROLE_CODES.FINANCE
+      },
+      {
+        username: "viewer",
+        name: "只读演示账号",
+        email: "viewer@ltc.local",
+        phone: "13800000015",
+        roleCode: ROLE_CODES.VIEWER
+      }
     ].map((item) =>
       prisma.user.create({
         data: {
-          ...item,
-          passwordHash
+          username: item.username,
+          name: item.name,
+          email: item.email,
+          phone: item.phone,
+          passwordHash,
+          role: roleCodeToLegacyRole[item.roleCode],
+          userRoles: {
+            create: {
+              roleId: roleIdMap.get(item.roleCode)!
+            }
+          }
         }
       })
     )
   );
 
   const admin = users[0];
-  const code = (prefix: string, index: number) => `${prefix}-${year}${String(index).padStart(4, "0")}`;
 
   const customer = await prisma.customer.create({
     data: {
-      code: code("CUST", 1),
+      code: code("CUST", year, 1),
       name: "华星制造集团",
       industry: "制造业",
       contactName: "李总",
@@ -56,7 +168,7 @@ async function main() {
 
   const lead = await prisma.lead.create({
     data: {
-      code: code("LEAD", 1),
+      code: code("LEAD", year, 1),
       customerId: customer.id,
       title: "华东工厂数字化升级线索",
       source: "渠道推荐",
@@ -74,12 +186,21 @@ async function main() {
 
   const opportunity = await prisma.opportunity.create({
     data: {
-      code: code("OPP", 1),
+      code: code("OPP", year, 1),
       customerId: customer.id,
       leadId: lead.id,
       name: "华星制造数字化升级商机",
       description: "已完成方案交流并进入成交阶段",
       amount: new Prisma.Decimal(120000),
+      estimatedRevenue: new Prisma.Decimal(120000),
+      estimatedLaborCost: new Prisma.Decimal(18000),
+      estimatedOutsourceCost: new Prisma.Decimal(12000),
+      estimatedProcurementCost: new Prisma.Decimal(15000),
+      estimatedTravelCost: new Prisma.Decimal(3000),
+      estimatedOtherCost: new Prisma.Decimal(2000),
+      estimatedTotalCost: new Prisma.Decimal(50000),
+      estimatedProfit: new Prisma.Decimal(70000),
+      estimatedProfitMargin: new Prisma.Decimal(0.5833),
       expectedSignDate: new Date(year, 5, 1),
       winRate: 80,
       stage: "WON",
@@ -90,7 +211,7 @@ async function main() {
 
   const project = await prisma.project.create({
     data: {
-      code: code("PROJ", 1),
+      code: code("PROJ", year, 1),
       customerId: customer.id,
       opportunityId: opportunity.id,
       name: "华星制造数字化升级项目",
@@ -106,7 +227,7 @@ async function main() {
 
   const contract = await prisma.contract.create({
     data: {
-      code: code("CONT", 1),
+      code: code("CONT", year, 1),
       customerId: customer.id,
       projectId: project.id,
       name: "华星制造一期实施合同",
@@ -123,7 +244,7 @@ async function main() {
 
   const delivery = await prisma.delivery.create({
     data: {
-      code: code("DELI", 1),
+      code: code("DELI", year, 1),
       customerId: customer.id,
       projectId: project.id,
       title: "一期蓝图与需求确认",
@@ -140,7 +261,7 @@ async function main() {
 
   const cost = await prisma.cost.create({
     data: {
-      code: code("COST", 1),
+      code: code("COST", year, 1),
       customerId: customer.id,
       projectId: project.id,
       title: "实施人工成本",
@@ -155,7 +276,7 @@ async function main() {
 
   const receivable = await prisma.receivable.create({
     data: {
-      code: code("REC", 1),
+      code: code("REC", year, 1),
       customerId: customer.id,
       projectId: project.id,
       contractId: contract.id,
@@ -253,7 +374,8 @@ async function main() {
   });
 
   console.log("Seed completed.");
-  console.log(`Admin account: admin / 123456`);
+  console.log("Default accounts: admin / sales / pm / delivery / finance / viewer");
+  console.log("Default password: 123456");
 }
 
 main()

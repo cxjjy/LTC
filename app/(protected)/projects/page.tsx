@@ -2,7 +2,9 @@ import { ListPageShell } from "@/components/list-page-shell";
 import { PageShell } from "@/components/page-shell";
 import { projectStatusLabels } from "@/lib/constants";
 import { requireSessionUser } from "@/lib/auth";
+import { getDeleteCopy } from "@/lib/delete-config";
 import { buildListHref, normalizeListParams, omitListFilters } from "@/lib/pagination";
+import { canAccessRecord, requirePagePermission } from "@/lib/rbac";
 import { formatDate } from "@/lib/utils";
 import { decimalToNumber } from "@/modules/core/decimal";
 import { projectService } from "@/modules/projects/service";
@@ -10,11 +12,19 @@ import { projectListConfig } from "@/modules/projects/ui/config";
 import type { PageSearchParams } from "@/types/common";
 
 export default async function ProjectsPage({ searchParams }: { searchParams: PageSearchParams }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "project", "view");
+  const canCreate = canAccessRecord(user, "project", "create");
+  const canUpdate = canAccessRecord(user, "project", "update");
+  const canDelete = canAccessRecord(user, "project", "delete");
+  const deleteCopy = getDeleteCopy("project");
   const params = normalizeListParams(searchParams);
   const view = typeof searchParams.view === "string" ? searchParams.view : "all";
   const result = await projectService.list(params, user);
-  const rows = result.items.map((item: any) => ({
+  const exportResult =
+    result.total > result.items.length
+      ? await projectService.list({ ...params, page: 1, pageSize: result.total }, user)
+      : result;
+  const mapRow = (item: any) => ({
     code: item.code,
     codeHref: `/projects/${item.id}`,
     name: item.name,
@@ -22,8 +32,18 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pag
     statusLabel: projectStatusLabels[item.status as keyof typeof projectStatusLabels],
     plannedStartDate: formatDate(item.plannedStartDate),
     plannedEndDate: formatDate(item.plannedEndDate),
-    budgetAmount: decimalToNumber(item.budgetAmount)
-  }));
+    budgetAmount: decimalToNumber(item.budgetAmount),
+    rowActions: {
+      moduleLabel: deleteCopy.moduleLabel,
+      recordLabel: `${item.code} / ${item.name}`,
+      viewHref: `/projects/${item.id}`,
+      editHref: canUpdate ? `/projects/${item.id}/edit` : undefined,
+      deleteEndpoint: canDelete ? `/api/projects/${item.id}` : undefined,
+      deleteWarning: deleteCopy.warning
+    }
+  });
+  const rows = result.items.map(mapRow);
+  const exportRows = exportResult.items.map(mapRow);
 
   return (
     <PageShell
@@ -36,6 +56,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pag
     >
       <ListPageShell
         config={projectListConfig}
+        canCreate={canCreate}
         tabs={[
           {
             label: "全部项目",
@@ -65,6 +86,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pag
           }
         ]}
         data={rows}
+        exportRows={exportRows}
         total={result.total}
         page={result.page}
         pageSize={result.pageSize}

@@ -30,7 +30,11 @@ export function CostForm({ mode, defaultValues, projectOptions, costId }: CostFo
       submitUrl={mode === "create" ? "/api/costs" : `/api/costs/${costId}`}
       submitMethod={mode === "create" ? "POST" : "PUT"}
       submitLabel={mode === "create" ? "创建成本" : "保存修改"}
-      successHref={mode === "create" ? "/costs" : `/costs/${costId}`}
+      successHref={
+        mode === "create"
+          ? (payload) => (payload.data?.id ? `/costs/${payload.data.id}` : "/costs")
+          : `/costs/${costId}`
+      }
     />
   );
 }

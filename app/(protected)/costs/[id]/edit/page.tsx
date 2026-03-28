@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { CostForm } from "@/modules/costs/ui/form";
 import { decimalToNumber } from "@/modules/core/decimal";
 import { costService } from "@/modules/costs/service";
@@ -7,7 +8,7 @@ import { projectService } from "@/modules/projects/service";
 import { toDateInputValue } from "@/lib/utils";
 
 export default async function EditCostPage({ params }: { params: { id: string } }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "cost", "update");
   const cost = (await costService.getDetail(params.id, user)) as any;
   const projectOptions = await projectService.getOptions(user);
 

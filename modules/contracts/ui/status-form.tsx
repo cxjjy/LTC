@@ -7,6 +7,7 @@ import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getUserFriendlyError, type ApiErrorPayload } from "@/lib/ui-error";
 import type { SelectOption } from "@/types/common";
 
 export function ContractStatusForm({
@@ -54,9 +55,9 @@ export function ContractStatusForm({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status })
               });
-              const payload = await response.json();
+              const payload = (await response.json()) as ApiErrorPayload;
               if (!response.ok) {
-                setError(payload.error ?? "状态变更失败");
+                setError(getUserFriendlyError(payload, "状态变更失败，请稍后重试"));
                 return;
               }
               router.refresh();

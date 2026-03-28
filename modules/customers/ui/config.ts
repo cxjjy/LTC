@@ -30,6 +30,7 @@ export const customerListConfig: ListPageConfig = {
   ],
   sortOptions: [
     { label: "创建时间", value: "createdAt" },
+    { label: "更新时间", value: "updatedAt" },
     { label: "客户名称", value: "name" },
     { label: "客户编号", value: "code" }
   ],

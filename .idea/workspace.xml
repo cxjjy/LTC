@@ -1,4 +1,165 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PropertiesComponent">{}</component>
+  <component name="ChangeListManager">
+    <list default="true" id="5807ff50-d7e2-48ea-8ec6-3e662667bcfd" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(auth)/login/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(auth)/login/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/audit-logs/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/audit-logs/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/audit-logs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/audit-logs/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/contracts/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/contracts/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/contracts/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/contracts/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/contracts/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/contracts/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/contracts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/contracts/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/costs/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/costs/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/costs/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/costs/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/costs/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/costs/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/costs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/costs/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/customers/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/customers/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/customers/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/customers/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/customers/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/customers/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/customers/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/customers/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/dashboard/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/deliveries/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/deliveries/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/deliveries/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/deliveries/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/deliveries/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/deliveries/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/deliveries/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/deliveries/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/leads/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/leads/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/leads/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/leads/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/leads/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/leads/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/leads/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/leads/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/opportunities/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/opportunities/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/opportunities/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/opportunities/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/opportunities/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/opportunities/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/opportunities/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/opportunities/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/projects/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/projects/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/projects/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/projects/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/projects/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/projects/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/projects/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/projects/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/receivables/[id]/edit/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/receivables/[id]/edit/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/receivables/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/receivables/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/receivables/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/receivables/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(protected)/receivables/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(protected)/receivables/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/data-table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/data-table.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/forms/entity-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/forms/entity-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/layout/app-shell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/layout/app-shell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/layout/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/layout/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/layout/top-navbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/layout/top-navbar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/layout/user-menu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/layout/user-menu.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/list-page-shell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/list-page-shell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/page-header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/page-header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/page-shell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/page-shell.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/section-card.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/section-card.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/constants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/constants.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/dashboard.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/dashboard.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/rbac.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/rbac.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/auth/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/auth/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/contracts/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/contracts/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/contracts/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/contracts/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/contracts/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/contracts/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/contracts/ui/status-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/contracts/ui/status-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/core/base-crud-service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/core/base-crud-service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/core/code-generator.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/core/code-generator.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/costs/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/costs/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/costs/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/costs/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/costs/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/costs/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/customers/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/customers/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/customers/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/customers/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/customers/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/customers/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/deliveries/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/deliveries/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/deliveries/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/deliveries/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/deliveries/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/deliveries/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/leads/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/leads/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/leads/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/leads/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/leads/ui/convert-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/leads/ui/convert-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/leads/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/leads/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/opportunities/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/opportunities/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/opportunities/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/opportunities/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/opportunities/ui/convert-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/opportunities/ui/convert-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/opportunities/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/opportunities/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/opportunities/validation.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/opportunities/validation.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/projects/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/projects/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/projects/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/projects/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/projects/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/projects/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/projects/ui/status-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/projects/ui/status-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/receivables/service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/receivables/service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/receivables/ui/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/modules/receivables/ui/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/receivables/ui/form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/receivables/ui/form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/receivables/ui/payment-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/modules/receivables/ui/payment-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/seed.ts" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/seed.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/ltc-services.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/tests/ltc-services.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.tsbuildinfo" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.tsbuildinfo" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 5
+}]]></component>
+  <component name="ProjectId" id="3BWufMgm8AIR9w459Sm9L6BKt44" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "js.debugger.nextJs.config.created.client": "true",
+    "js.debugger.nextJs.config.created.server": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager" selected="npm.Next.js: server-side">
+    <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
+      <method v="2" />
+    </configuration>
+    <configuration name="Next.js: server-side" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.129" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.129" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5807ff50-d7e2-48ea-8ec6-3e662667bcfd" name="Changes" comment="" />
+      <created>1774617251667</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774617251667</updated>
+      <workItem from="1774617253730" duration="81000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
 </project>

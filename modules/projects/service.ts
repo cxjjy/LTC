@@ -1,7 +1,7 @@
 import { ContractStatus, EntityType, Prisma, ProjectStatus } from "@prisma/client";
 
 import type { SessionUser } from "@/lib/auth";
-import { notFound } from "@/lib/errors";
+import { badRequest, notFound } from "@/lib/errors";
 import {
   createPaginationMeta,
   parseDateEnd,
@@ -25,6 +25,20 @@ import { projectRepository } from "@/modules/projects/repository";
 class ProjectService extends BaseCrudService<unknown> {
   constructor() {
     super(projectRepository, "project", EntityType.PROJECT);
+  }
+
+  protected override async assertCanSoftDelete(record: unknown) {
+    const project = record as { id: string };
+    const [contractCount, deliveryCount, costCount, receivableCount] = await Promise.all([
+      prisma.contract.count({ where: { projectId: project.id, isDeleted: false } }),
+      prisma.delivery.count({ where: { projectId: project.id, isDeleted: false } }),
+      prisma.cost.count({ where: { projectId: project.id, isDeleted: false } }),
+      prisma.receivable.count({ where: { projectId: project.id, isDeleted: false } })
+    ]);
+
+    if (contractCount || deliveryCount || costCount || receivableCount) {
+      throw badRequest("当前项目存在关联合同、交付、成本或回款，无法删除");
+    }
   }
 
   async list(params: Required<ListParams>, user: SessionUser) {
@@ -70,6 +84,7 @@ class ProjectService extends BaseCrudService<unknown> {
     };
     const orderByMap: Record<string, Prisma.ProjectOrderByWithRelationInput> = {
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       plannedStartDate: { plannedStartDate: params.sortOrder },
       plannedEndDate: { plannedEndDate: params.sortOrder },
       budgetAmount: { budgetAmount: params.sortOrder },

@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { opportunityService } from "@/modules/opportunities/service";
 import { ProjectForm } from "@/modules/projects/ui/form";
 
 export default async function NewProjectPage() {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "project", "create");
   const opportunityOptions = await opportunityService.getOptions(user);
 
   return (

@@ -2,7 +2,9 @@ import { ListPageShell } from "@/components/list-page-shell";
 import { PageShell } from "@/components/page-shell";
 import { leadStatusLabels } from "@/lib/constants";
 import { requireSessionUser } from "@/lib/auth";
+import { getDeleteCopy } from "@/lib/delete-config";
 import { buildListHref, normalizeListParams, omitListFilters } from "@/lib/pagination";
+import { canAccessRecord, requirePagePermission } from "@/lib/rbac";
 import { formatDate } from "@/lib/utils";
 import { decimalToNumber } from "@/modules/core/decimal";
 import type { PageSearchParams } from "@/types/common";
@@ -10,11 +12,19 @@ import { leadService } from "@/modules/leads/service";
 import { leadListConfig } from "@/modules/leads/ui/config";
 
 export default async function LeadsPage({ searchParams }: { searchParams: PageSearchParams }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "lead", "view");
+  const canCreate = canAccessRecord(user, "lead", "create");
+  const canUpdate = canAccessRecord(user, "lead", "update");
+  const canDelete = canAccessRecord(user, "lead", "delete");
+  const deleteCopy = getDeleteCopy("lead");
   const params = normalizeListParams(searchParams);
   const view = typeof searchParams.view === "string" ? searchParams.view : "all";
   const result = await leadService.list(params, user);
-  const rows = result.items.map((item: any) => ({
+  const exportResult =
+    result.total > result.items.length
+      ? await leadService.list({ ...params, page: 1, pageSize: result.total }, user)
+      : result;
+  const mapRow = (item: any) => ({
     code: item.code,
     codeHref: `/leads/${item.id}`,
     title: item.title,
@@ -22,8 +32,18 @@ export default async function LeadsPage({ searchParams }: { searchParams: PageSe
     source: item.source || "-",
     statusLabel: leadStatusLabels[item.status as keyof typeof leadStatusLabels],
     expectedCloseDate: formatDate(item.expectedCloseDate),
-    expectedAmount: decimalToNumber(item.expectedAmount)
-  }));
+    expectedAmount: decimalToNumber(item.expectedAmount),
+    rowActions: {
+      moduleLabel: deleteCopy.moduleLabel,
+      recordLabel: `${item.code} / ${item.title}`,
+      viewHref: `/leads/${item.id}`,
+      editHref: canUpdate ? `/leads/${item.id}/edit` : undefined,
+      deleteEndpoint: canDelete ? `/api/leads/${item.id}` : undefined,
+      deleteWarning: deleteCopy.warning
+    }
+  });
+  const rows = result.items.map(mapRow);
+  const exportRows = exportResult.items.map(mapRow);
 
   return (
     <PageShell
@@ -36,6 +56,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: PageSe
     >
       <ListPageShell
         config={leadListConfig}
+        canCreate={canCreate}
         tabs={[
           {
             label: "全部线索",
@@ -65,6 +86,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: PageSe
           }
         ]}
         data={rows}
+        exportRows={exportRows}
         total={result.total}
         page={result.page}
         pageSize={result.pageSize}

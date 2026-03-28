@@ -71,6 +71,7 @@ class CostService extends BaseCrudService<unknown> {
     const orderByMap: Record<string, Prisma.CostOrderByWithRelationInput> = {
       occurredAt: { occurredAt: params.sortOrder },
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       amount: { amount: params.sortOrder },
       title: { title: params.sortOrder }
     };
@@ -90,7 +91,7 @@ class CostService extends BaseCrudService<unknown> {
           }
         }
       },
-      orderBy: orderByMap[params.sortBy] ?? { occurredAt: "desc" },
+      orderBy: orderByMap[params.sortBy] ?? { createdAt: "desc" },
       skip: (params.page - 1) * params.pageSize,
       take: params.pageSize
     });

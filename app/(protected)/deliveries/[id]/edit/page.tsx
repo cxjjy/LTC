@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/page-header";
 import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
 import { deliveryService } from "@/modules/deliveries/service";
 import { DeliveryForm } from "@/modules/deliveries/ui/form";
 import { projectService } from "@/modules/projects/service";
 import { toDateInputValue } from "@/lib/utils";
 
 export default async function EditDeliveryPage({ params }: { params: { id: string } }) {
-  const user = await requireSessionUser();
+  const user = await requirePagePermission(requireSessionUser(), "delivery", "update");
   const delivery = (await deliveryService.getDetail(params.id, user)) as any;
   const projectOptions = await projectService.getOptions(user);
 

@@ -66,6 +66,7 @@ class DeliveryService extends BaseCrudService<unknown> {
     const orderByMap: Record<string, Prisma.DeliveryOrderByWithRelationInput> = {
       plannedDate: { plannedDate: params.sortOrder },
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       title: { title: params.sortOrder }
     };
 
@@ -84,7 +85,7 @@ class DeliveryService extends BaseCrudService<unknown> {
           }
         }
       },
-      orderBy: orderByMap[params.sortBy] ?? { plannedDate: "asc" },
+      orderBy: orderByMap[params.sortBy] ?? { createdAt: "desc" },
       skip: (params.page - 1) * params.pageSize,
       take: params.pageSize
     });

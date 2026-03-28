@@ -32,7 +32,11 @@ export function ContractForm({ mode, defaultValues, projectOptions, contractId }
       submitUrl={mode === "create" ? "/api/contracts" : `/api/contracts/${contractId}`}
       submitMethod={mode === "create" ? "POST" : "PUT"}
       submitLabel={mode === "create" ? "创建合同" : "保存修改"}
-      successHref={mode === "create" ? "/contracts" : `/contracts/${contractId}`}
+      successHref={
+        mode === "create"
+          ? (payload) => (payload.data?.id ? `/contracts/${payload.data.id}` : "/contracts")
+          : `/contracts/${contractId}`
+      }
     />
   );
 }

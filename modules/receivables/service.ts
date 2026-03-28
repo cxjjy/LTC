@@ -97,6 +97,7 @@ class ReceivableService extends BaseCrudService<unknown> {
     const orderByMap: Record<string, Prisma.ReceivableOrderByWithRelationInput> = {
       dueDate: { dueDate: params.sortOrder },
       createdAt: { createdAt: params.sortOrder },
+      updatedAt: { updatedAt: params.sortOrder },
       amountDue: { amountDue: params.sortOrder },
       amountReceived: { amountReceived: params.sortOrder }
     };
@@ -117,7 +118,7 @@ class ReceivableService extends BaseCrudService<unknown> {
         },
         contract: true
       },
-      orderBy: orderByMap[params.sortBy] ?? { dueDate: "asc" },
+      orderBy: orderByMap[params.sortBy] ?? { createdAt: "desc" },
       skip: (params.page - 1) * params.pageSize,
       take: params.pageSize
     });

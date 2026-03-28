@@ -1,7 +1,15 @@
-import type { UserRole } from "@prisma/client";
+import { redirect } from "next/navigation";
 
 import { forbidden } from "@/lib/errors";
 import type { SessionUser } from "@/lib/auth";
+import {
+  defaultRolePermissionCodes,
+  legacyRoleFallbackMap,
+  permissionCode,
+  type PermissionAction,
+  type PermissionModule,
+  type RoleCode
+} from "@/lib/permissions";
 
 export type ResourceAction =
   | "view"
@@ -22,103 +30,104 @@ export type ResourceName =
   | "delivery"
   | "cost"
   | "receivable"
-  | "auditLog";
+  | "auditLog"
+  | "user"
+  | "role"
+  | "permission";
 
-const allowAll = new Set<ResourceAction>([
-  "view",
-  "create",
-  "update",
-  "delete",
-  "convert",
-  "status",
-  "payment"
-]);
-
-const permissions: Record<UserRole, Partial<Record<ResourceName, Set<ResourceAction>>>> = {
-  ADMIN: {
-    dashboard: allowAll,
-    customer: allowAll,
-    lead: allowAll,
-    opportunity: allowAll,
-    project: allowAll,
-    contract: allowAll,
-    delivery: allowAll,
-    cost: allowAll,
-    receivable: allowAll,
-    auditLog: allowAll
-  },
-  SALES: {
-    dashboard: new Set(["view"]),
-    customer: new Set(["view", "create", "update"]),
-    lead: new Set(["view", "create", "update", "convert"]),
-    opportunity: new Set(["view", "create", "update", "convert"]),
-    project: new Set(["view"]),
-    contract: new Set(["view"]),
-    delivery: new Set(["view"]),
-    cost: new Set(["view"]),
-    receivable: new Set(["view"]),
-    auditLog: new Set(["view"])
-  },
-  PM: {
-    dashboard: new Set(["view"]),
-    customer: new Set(["view"]),
-    lead: new Set(["view"]),
-    opportunity: new Set(["view"]),
-    project: new Set(["view", "create", "update", "status"]),
-    contract: new Set(["view"]),
-    delivery: new Set(["view", "create", "update", "status"]),
-    cost: new Set(["view", "create", "update"]),
-    receivable: new Set(["view"]),
-    auditLog: new Set(["view"])
-  },
-  DELIVERY: {
-    dashboard: new Set(["view"]),
-    customer: new Set(["view"]),
-    lead: new Set(["view"]),
-    opportunity: new Set(["view"]),
-    project: new Set(["view"]),
-    contract: new Set(["view"]),
-    delivery: new Set(["view", "create", "update", "status"]),
-    cost: new Set(["view"]),
-    receivable: new Set(["view"]),
-    auditLog: new Set(["view"])
-  },
-  FINANCE: {
-    dashboard: new Set(["view"]),
-    customer: new Set(["view"]),
-    lead: new Set(["view"]),
-    opportunity: new Set(["view"]),
-    project: new Set(["view"]),
-    contract: new Set(["view", "update", "status"]),
-    delivery: new Set(["view"]),
-    cost: new Set(["view"]),
-    receivable: new Set(["view", "create", "update", "payment"]),
-    auditLog: new Set(["view"])
-  }
+const resourceModuleMap: Record<ResourceName, PermissionModule> = {
+  dashboard: "dashboard",
+  customer: "customer",
+  lead: "lead",
+  opportunity: "opportunity",
+  project: "project",
+  contract: "contract",
+  delivery: "delivery",
+  cost: "cost",
+  receivable: "receivable",
+  auditLog: "audit_log",
+  user: "user",
+  role: "role",
+  permission: "permission"
 };
 
-export function requireRole(user: SessionUser, role: UserRole) {
-  if (user.role !== "ADMIN" && user.role !== role) {
+const actionAliasMap: Record<ResourceAction, PermissionAction> = {
+  view: "view",
+  create: "create",
+  update: "update",
+  delete: "delete",
+  convert: "convert",
+  status: "change_status",
+  payment: "update"
+};
+
+function getFallbackPermissions(user: SessionUser) {
+  const roleCode = legacyRoleFallbackMap[user.role] ?? "VIEWER";
+  return defaultRolePermissionCodes[roleCode as RoleCode] ?? [];
+}
+
+export function hasPermission(user: SessionUser, code: string) {
+  if (user.role === "SUPER_ADMIN" || user.roles?.some((role) => role.code === "SUPER_ADMIN")) {
+    return true;
+  }
+
+  const permissionSet = new Set([...(user.permissions ?? []), ...getFallbackPermissions(user)]);
+  return permissionSet.has(code);
+}
+
+export function requirePermission(user: SessionUser, code: string) {
+  if (!hasPermission(user, code)) {
+    throw forbidden("当前账号缺少对应权限");
+  }
+}
+
+export function requireAnyPermission(user: SessionUser, codes: string[]) {
+  if (!codes.some((code) => hasPermission(user, code))) {
+    throw forbidden("当前账号缺少对应权限");
+  }
+}
+
+export function requireRole(user: SessionUser, role: string) {
+  if (user.role === "SUPER_ADMIN" || user.roles?.some((item) => item.code === "SUPER_ADMIN")) {
+    return;
+  }
+
+  const roleCodes = new Set([user.role, ...(user.roles?.map((item) => item.code) ?? [])]);
+  if (!roleCodes.has(role)) {
     throw forbidden(`需要 ${role} 角色权限`);
   }
 }
 
-export function requireAnyRole(user: SessionUser, roles: UserRole[]) {
-  if (user.role !== "ADMIN" && !roles.includes(user.role)) {
+export function requireAnyRole(user: SessionUser, roles: string[]) {
+  if (user.role === "SUPER_ADMIN" || user.roles?.some((item) => item.code === "SUPER_ADMIN")) {
+    return;
+  }
+
+  const roleCodes = new Set([user.role, ...(user.roles?.map((item) => item.code) ?? [])]);
+  if (!roles.some((role) => roleCodes.has(role))) {
     throw forbidden("当前角色无权执行此操作");
   }
 }
 
 export function canAccessRecord(user: SessionUser, resource: ResourceName, action: ResourceAction) {
-  if (user.role === "ADMIN") {
-    return true;
-  }
-
-  return permissions[user.role]?.[resource]?.has(action) ?? false;
+  return hasPermission(user, permissionCode(resourceModuleMap[resource], actionAliasMap[action]));
 }
 
 export function assertCanAccessRecord(user: SessionUser, resource: ResourceName, action: ResourceAction) {
   if (!canAccessRecord(user, resource, action)) {
     throw forbidden("当前角色无权执行此操作");
   }
+}
+
+export async function requirePagePermission(
+  user: Promise<SessionUser> | SessionUser,
+  resource: ResourceName,
+  action: ResourceAction,
+  redirectTo = "/forbidden"
+) {
+  const resolvedUser = await user;
+  if (!canAccessRecord(resolvedUser, resource, action)) {
+    redirect(redirectTo);
+  }
+  return resolvedUser;
 }
