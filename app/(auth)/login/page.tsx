@@ -105,7 +105,7 @@ export default function LoginPage() {
           <div className="w-full max-w-[440px] rounded-[12px] border border-[rgba(229,231,235,0.96)] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
             <div className="border-b border-[rgba(229,231,235,0.92)] px-8 py-6">
               <div className="text-[24px] font-semibold tracking-[-0.03em] text-foreground">登录系统</div>
-              <div className="mt-2 text-sm text-muted-foreground">请输入默认账号进入本地项目管理工作台</div>
+              <div className="mt-2 text-sm text-muted-foreground">请输入账号和密码登录项目管理工作台</div>
             </div>
 
             <div className="px-8 py-7">
@@ -181,11 +181,6 @@ export default function LoginPage() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
 
-                <div className="rounded-[10px] bg-[#f8fafc] px-4 py-3 text-sm leading-7 text-muted-foreground">
-                  默认账号：`admin` / `sales` / `pm` / `delivery` / `finance` / `viewer`
-                  <br />
-                  默认密码：`123456`
-                </div>
               </form>
             </div>
           </div>
