@@ -191,7 +191,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="老板驾驶舱"
+        title="驾驶舱"
         description="从利润、现金流、风险和转化视角俯瞰公司整体经营情况。"
       />
 
