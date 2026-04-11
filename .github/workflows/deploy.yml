@@ -1,0 +1,34 @@
+name: Deploy LTC
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 拉代码
+        uses: actions/checkout@v4
+
+      - name: 登录阿里云 ACR
+        run: |
+          docker login registry.cn-hangzhou.aliyuncs.com \
+          -u ${{ secrets.ACR_USERNAME }} \
+          -p ${{ secrets.ACR_PASSWORD }}
+
+      - name: 构建并推送镜像
+        run: |
+          docker build -t registry.cn-hangzhou.aliyuncs.com/ssalcloud/ltc-app:latest .
+          docker push registry.cn-hangzhou.aliyuncs.com/ssalcloud/ltc-app:latest
+
+      - name: 更新 K8s
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: root
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            kubectl -n ltc rollout restart deployment ltc
