@@ -57,7 +57,6 @@ export function UserMenu({ user }: { user: SessionUser }) {
             <UserCircle2 className="h-4 w-4 text-muted-foreground" />
             个人信息
           </span>
-          <span className="text-xs text-muted-foreground">即将开放</span>
         </button>
 
         <button
@@ -68,7 +67,6 @@ export function UserMenu({ user }: { user: SessionUser }) {
             <Settings className="h-4 w-4 text-muted-foreground" />
             系统设置
           </span>
-          <span className="text-xs text-muted-foreground">即将开放</span>
         </button>
 
         <div className="my-1 h-px bg-[rgba(229,231,235,0.9)]" />
