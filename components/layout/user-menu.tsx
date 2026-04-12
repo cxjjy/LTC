@@ -6,6 +6,7 @@ import { ChevronDown, LogOut, Settings, UserCircle2 } from "lucide-react";
 
 import type { SessionUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function getInitials(name: string) {
   return name
@@ -20,6 +21,7 @@ function getInitials(name: string) {
 export function UserMenu({ user }: { user: SessionUser }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const initials = useMemo(() => getInitials(user.name || user.username || "U"), [user.name, user.username]);
 
@@ -77,17 +79,42 @@ export function UserMenu({ user }: { user: SessionUser }) {
           disabled={isPending}
           onClick={() => {
             setOpen(false);
-            startTransition(async () => {
-              await fetch("/api/auth/logout", { method: "POST" });
-              router.push("/login");
-              router.refresh();
-            });
+            setConfirmOpen(true);
           }}
         >
           <LogOut className="h-4 w-4" />
-          {isPending ? "退出中..." : "退出登录"}
+          退出登录
         </Button>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="w-[min(92vw,420px)] rounded-[18px] p-6">
+          <DialogHeader>
+            <DialogTitle>确认退出登录</DialogTitle>
+            <DialogDescription>退出后将返回登录页，如有未保存内容请先完成保存。</DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={isPending}>
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isPending}
+              onClick={() => {
+                startTransition(async () => {
+                  await fetch("/api/auth/logout", { method: "POST" });
+                  setConfirmOpen(false);
+                  router.push("/login");
+                  router.refresh();
+                });
+              }}
+            >
+              {isPending ? "退出中..." : "确认退出"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </details>
   );
 }
