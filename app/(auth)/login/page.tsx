@@ -160,7 +160,7 @@ export default function LoginPage() {
               >
                 <div className="grid gap-2">
                   <Label htmlFor="username">用户名</Label>
-                  <Input id="username" name="username" placeholder="例如：admin" autoComplete="username" />
+                  <Input id="username" name="username" placeholder="请输入账号" autoComplete="username" />
                 </div>
 
                 <div className="grid gap-2">
