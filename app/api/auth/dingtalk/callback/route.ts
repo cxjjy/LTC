@@ -17,8 +17,50 @@ import { auditLogService } from "@/modules/core/audit-log.service";
 
 export const dynamic = "force-dynamic";
 
+const APP_ORIGIN_ENV_KEYS = [
+  "NEXT_PUBLIC_APP_URL",
+  "NEXTAUTH_URL",
+  "APP_URL",
+  "BASE_URL",
+  "SITE_URL"
+];
+
+function normalizeOrigin(value: string) {
+  return value.replace(/\/+$/, "");
+}
+
+function getConfiguredAppOrigin() {
+  for (const key of APP_ORIGIN_ENV_KEYS) {
+    const value = process.env[key];
+    if (value && /^https?:\/\//i.test(value)) {
+      return normalizeOrigin(value);
+    }
+  }
+  return null;
+}
+
+function getAppOrigin(req: NextRequest) {
+  const configuredOrigin = getConfiguredAppOrigin();
+  if (configuredOrigin) {
+    return configuredOrigin;
+  }
+
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  if (forwardedHost && forwardedProto) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  const requestOrigin = req.nextUrl.origin;
+  if (process.env.NODE_ENV === "production" && /localhost|127\.0\.0\.1/i.test(requestOrigin)) {
+    return "https://ltc.ssalcloud.com";
+  }
+
+  return normalizeOrigin(requestOrigin);
+}
+
 function redirectToLogin(req: NextRequest, error: string, debug?: string) {
-  const url = new URL("/login", req.url);
+  const url = new URL("/login", getAppOrigin(req));
   url.searchParams.set("error", error);
   if (debug) {
     url.searchParams.set("debug", debug);
@@ -169,7 +211,7 @@ export async function GET(request: NextRequest) {
       message: "钉钉登录"
     });
 
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/dashboard", getAppOrigin(request)));
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("未获取到钉钉用户身份")) {
