@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BriefcaseBusiness, Building2, ChartColumn, ShieldCheck } from "lucide-react";
 
@@ -49,6 +50,26 @@ export default function LoginPage() {
         return payload.error || "登录失败，请稍后重试";
     }
   }
+
+  function normalizeQueryError(errorCode: string | null) {
+    switch (errorCode) {
+      case "dingtalk_state_invalid":
+        return "钉钉登录校验失败，请重新发起登录";
+      case "dingtalk_userid_missing":
+        return "未获取到钉钉用户身份，请联系管理员";
+      case "dingtalk_oauth_failed":
+        return "钉钉登录失败，请稍后重试";
+      default:
+        return "";
+    }
+  }
+
+  useEffect(() => {
+    const queryError = normalizeQueryError(new URLSearchParams(window.location.search).get("error"));
+    if (queryError) {
+      setError(queryError);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f5f6f8]">
@@ -179,6 +200,10 @@ export default function LoginPage() {
                 <Button disabled={isPending} className="h-10 w-full justify-center">
                   {isPending ? "登录中..." : "进入系统"}
                   <ArrowRight className="h-4 w-4" />
+                </Button>
+
+                <Button asChild type="button" variant="outline" className="h-10 w-full justify-center">
+                  <Link href="/api/auth/dingtalk/login">使用钉钉登录</Link>
                 </Button>
 
               </form>

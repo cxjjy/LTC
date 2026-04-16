@@ -46,6 +46,12 @@ cp .env.example .env
 ```env
 DATABASE_URL="mysql://root:password@127.0.0.1:3306/ltc"
 SESSION_SECRET="ltc-local-dev-secret"
+DINGTALK_CLIENT_ID=""
+DINGTALK_CLIENT_SECRET=""
+DINGTALK_REDIRECT_URI="https://ltc.ssalcloud.com/api/auth/dingtalk/callback"
+DINGTALK_AUTH_BASE="https://login.dingtalk.com/oauth2/auth"
+DINGTALK_SCOPE="openid"
+DINGTALK_STATE_SECRET=""
 ```
 
 ## 本地 MySQL 初始化
@@ -98,6 +104,28 @@ npm run seed
 - `pm`
 - `delivery`
 - `finance`
+
+## 钉钉登录接入
+
+系统已预留钉钉网页登录入口，保留原有账号密码登录方式不变。
+
+部署前请补齐以下环境变量：
+
+```env
+DINGTALK_CLIENT_ID="dingrwonqkyjz5xcgrlp"
+DINGTALK_CLIENT_SECRET="你的钉钉 AppSecret"
+DINGTALK_REDIRECT_URI="https://ltc.ssalcloud.com/api/auth/dingtalk/callback"
+DINGTALK_SCOPE="openid"
+DINGTALK_STATE_SECRET="一个随机长字符串"
+```
+
+说明：
+
+- 首次钉钉登录会自动创建本地用户
+- 自动创建的用户默认角色为 `VIEWER`
+- 自动创建用户的密码占位值为 `DINGTALK_LOGIN_ONLY`
+- 回调地址必须与钉钉开放平台后台配置保持一致
+- 建议使用 HTTPS 公网地址完成授权回调
 
 ## 测试
 

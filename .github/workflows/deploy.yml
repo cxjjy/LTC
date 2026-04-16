@@ -8,10 +8,27 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_REPO: registry.cn-hangzhou.aliyuncs.com/ssalcloud/ltc-app
 
     steps:
       - name: 拉代码
         uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: npm
+
+      - name: 安装依赖
+        run: npm install
+
+      - name: 生成 Prisma Client
+        run: npx prisma generate
+
+      - name: 构建应用
+        run: npm run build
 
       - name: 登录阿里云 ACR
         run: |
@@ -21,14 +38,40 @@ jobs:
 
       - name: 构建并推送镜像
         run: |
-          docker build -t registry.cn-hangzhou.aliyuncs.com/ssalcloud/ltc-app:latest .
-          docker push registry.cn-hangzhou.aliyuncs.com/ssalcloud/ltc-app:latest
+          docker build -t $IMAGE_REPO:${GITHUB_SHA} -t $IMAGE_REPO:latest .
+          docker push $IMAGE_REPO:${GITHUB_SHA}
+          docker push $IMAGE_REPO:latest
 
-      - name: 更新 K8s
+      - name: 发布到 K8s
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
           username: root
           key: ${{ secrets.SSH_KEY }}
+          envs: IMAGE_REPO,GITHUB_SHA
           script: |
+            cat <<EOF | kubectl apply -f -
+            apiVersion: batch/v1
+            kind: Job
+            metadata:
+              name: ltc-prisma-migrate-${GITHUB_SHA::7}
+              namespace: ltc
+            spec:
+              ttlSecondsAfterFinished: 600
+              template:
+                spec:
+                  restartPolicy: Never
+                  containers:
+                    - name: prisma-migrate
+                      image: ${IMAGE_REPO}:${GITHUB_SHA}
+                      command: ["/bin/sh", "-lc", "npx prisma migrate deploy"]
+                      envFrom:
+                        - configMapRef:
+                            name: ltc-config
+                        - secretRef:
+                            name: ltc-secret
+            EOF
+            kubectl -n ltc wait --for=condition=complete --timeout=300s job/ltc-prisma-migrate-${GITHUB_SHA::7}
+            kubectl -n ltc delete job ltc-prisma-migrate-${GITHUB_SHA::7} --ignore-not-found=true
             kubectl -n ltc rollout restart deployment ltc
+            kubectl -n ltc rollout status deployment ltc --timeout=300s

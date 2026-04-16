@@ -29,6 +29,7 @@ async function main() {
   const passwordHash = await bcrypt.hash("123456", 10);
 
   await prisma.auditLog.deleteMany();
+  await prisma.authBinding.deleteMany();
   await prisma.rolePermissionAssignment.deleteMany();
   await prisma.userRoleAssignment.deleteMany();
   await prisma.receivable.deleteMany();
