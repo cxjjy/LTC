@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import { badRequest } from "@/lib/errors";
+import { AppError, badRequest } from "@/lib/errors";
 
 const CURRENT_AUTH_BASE = "https://login.dingtalk.com/oauth2/auth";
 const DEFAULT_TOKEN_URL = "https://api.dingtalk.com/v1.0/oauth2/userAccessToken";
@@ -93,6 +93,10 @@ export function buildDingTalkAuthUrl(state: string) {
 }
 
 export async function exchangeCodeForToken(code: string): Promise<DingTalkTokenResult> {
+  console.info("DingTalk token exchange started", {
+    code: redact(code)
+  });
+
   const response = await fetch(process.env.DINGTALK_TOKEN_URL || DEFAULT_TOKEN_URL, {
     method: "POST",
     headers: {
@@ -117,7 +121,7 @@ export async function exchangeCodeForToken(code: string): Promise<DingTalkTokenR
       body: record,
       code: redact(code)
     });
-    throw badRequest("钉钉授权失败，请稍后重试");
+    throw new AppError("钉钉授权失败，请稍后重试", 400, "DINGTALK_TOKEN_FAILED");
   }
 
   const accessToken = pickString(record, ["accessToken", "access_token"]);
@@ -126,8 +130,13 @@ export async function exchangeCodeForToken(code: string): Promise<DingTalkTokenR
       body: record,
       code: redact(code)
     });
-    throw badRequest("钉钉授权失败，请稍后重试");
+    throw new AppError("钉钉授权失败，请稍后重试", 400, "DINGTALK_TOKEN_FAILED");
   }
+
+  console.info("DingTalk token exchange succeeded", {
+    expireIn: typeof record.expiresIn === "number" ? record.expiresIn : null,
+    refreshToken: redact(pickString(record, ["refreshToken", "refresh_token"]))
+  });
 
   return {
     accessToken,
@@ -138,10 +147,17 @@ export async function exchangeCodeForToken(code: string): Promise<DingTalkTokenR
 }
 
 export async function fetchDingTalkUser(tokenResult: DingTalkTokenResult): Promise<DingTalkUserProfile> {
+  console.info("DingTalk user info request started", {
+    url: process.env.DINGTALK_USERINFO_URL || DEFAULT_USERINFO_URL,
+    accessToken: redact(tokenResult.accessToken),
+    hasAccessTokenHeader: Boolean(tokenResult.accessToken)
+  });
+
   const response = await fetch(process.env.DINGTALK_USERINFO_URL || DEFAULT_USERINFO_URL, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${tokenResult.accessToken}`,
+      "Content-Type": "application/json",
+      "x-acs-dingtalk-access-token": tokenResult.accessToken,
       Accept: "application/json"
     },
     cache: "no-store"
@@ -153,11 +169,13 @@ export async function fetchDingTalkUser(tokenResult: DingTalkTokenResult): Promi
 
   if (!response.ok) {
     console.error("DingTalk user info request failed", {
+      url: process.env.DINGTALK_USERINFO_URL || DEFAULT_USERINFO_URL,
       status: response.status,
       body: record,
-      accessToken: redact(tokenResult.accessToken)
+      accessToken: redact(tokenResult.accessToken),
+      hasAccessTokenHeader: Boolean(tokenResult.accessToken)
     });
-    throw badRequest("钉钉用户信息获取失败，请稍后重试");
+    throw new AppError("钉钉用户信息获取失败，请稍后重试", 400, "DINGTALK_USERINFO_FAILED");
   }
 
   const unionId = pickString(profile, ["unionId", "union_id"]);
@@ -170,8 +188,16 @@ export async function fetchDingTalkUser(tokenResult: DingTalkTokenResult): Promi
       body: profile,
       accessToken: redact(tokenResult.accessToken)
     });
-    throw badRequest("未获取到钉钉用户身份，请联系管理员");
+    throw new AppError("未获取到钉钉用户身份，请联系管理员", 400, "DINGTALK_USERINFO_FAILED");
   }
+
+  console.info("DingTalk user info request succeeded", {
+    url: process.env.DINGTALK_USERINFO_URL || DEFAULT_USERINFO_URL,
+    unionId: redact(unionId),
+    openId: redact(openId),
+    userId: redact(userId),
+    providerUserId: redact(providerUserId)
+  });
 
   return {
     providerUserId,

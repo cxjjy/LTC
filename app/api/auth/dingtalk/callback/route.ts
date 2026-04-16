@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 
+import { AppError } from "@/lib/errors";
 import { signSession } from "@/lib/auth";
 import { SESSION_COOKIE_NAME } from "@/lib/constants";
 import {
@@ -27,6 +28,16 @@ const APP_ORIGIN_ENV_KEYS = [
 
 function normalizeOrigin(value: string) {
   return value.replace(/\/+$/, "");
+}
+
+function maskValue(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+  if (value.length <= 8) {
+    return "***";
+  }
+  return `${value.slice(0, 4)}***${value.slice(-4)}`;
 }
 
 function getConfiguredAppOrigin() {
@@ -74,6 +85,13 @@ function buildUsername(profile: DingTalkUserProfile) {
 }
 
 async function createUserFromDingTalk(profile: DingTalkUserProfile) {
+  console.info("DingTalk callback creating local user", {
+    providerUserId: maskValue(profile.providerUserId),
+    nick: profile.nick ?? null,
+    email: profile.email ?? null,
+    mobile: maskValue(profile.mobile)
+  });
+
   const viewerRole = await prisma.role.findFirst({
     where: {
       code: ROLE_CODES.VIEWER,
@@ -126,19 +144,64 @@ async function createUserFromDingTalk(profile: DingTalkUserProfile) {
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code") || url.searchParams.get("authCode");
+  const rawCode = url.searchParams.get("code");
+  const rawAuthCode = url.searchParams.get("authCode");
   const state = url.searchParams.get("state");
   const savedState = cookies().get("dingtalk_oauth_state")?.value;
 
+  console.info("DingTalk callback entered", {
+    requestUrl: request.url,
+    hasCode: Boolean(rawCode),
+    hasAuthCode: Boolean(rawAuthCode),
+    hasState: Boolean(state),
+    code: maskValue(code),
+    state: maskValue(state),
+    cookieState: maskValue(savedState)
+  });
+
   cookies().delete("dingtalk_oauth_state");
 
-  if (!code || !state || !savedState || state !== savedState || !isValidDingTalkState(state)) {
+  const isStateValid =
+    Boolean(code) &&
+    Boolean(state) &&
+    Boolean(savedState) &&
+    state === savedState &&
+    isValidDingTalkState(state);
+
+  console.info("DingTalk callback state validation finished", {
+    hasCode: Boolean(code),
+    hasState: Boolean(state),
+    hasSavedState: Boolean(savedState),
+    stateMatched: Boolean(state && savedState && state === savedState),
+    isStateValid
+  });
+
+  if (!isStateValid) {
+    console.warn("DingTalk callback rejected by state validation", {
+      code: maskValue(code),
+      state: maskValue(state),
+      cookieState: maskValue(savedState)
+    });
     return redirectToLogin(request, "dingtalk_state_invalid", "dingtalk_callback_hit");
   }
 
+  const validatedCode = code!;
+
   try {
-    const tokenResult = await exchangeCodeForToken(code);
+    console.info("DingTalk callback exchanging code for token", {
+      code: maskValue(validatedCode)
+    });
+    const tokenResult = await exchangeCodeForToken(validatedCode);
+
+    console.info("DingTalk callback fetching DingTalk user profile", {
+      accessToken: maskValue(tokenResult.accessToken)
+    });
     const profile = await fetchDingTalkUser(tokenResult);
 
+    console.info("DingTalk callback querying auth binding", {
+      provider: "dingtalk",
+      providerUserId: maskValue(profile.providerUserId)
+    });
     let binding = await prisma.authBinding.findUnique({
       where: {
         provider_providerUserId: {
@@ -167,10 +230,28 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    console.info("DingTalk callback auth binding query finished", {
+      foundBinding: Boolean(binding),
+      bindingUserId: binding?.userId ?? null
+    });
+
     let user = binding?.user;
 
     if (!user) {
+      console.info("DingTalk callback did not find local binding, creating user", {
+        providerUserId: maskValue(profile.providerUserId)
+      });
       user = await createUserFromDingTalk(profile);
+
+      console.info("DingTalk callback local user created", {
+        userId: user.id,
+        username: user.username
+      });
+
+      console.info("DingTalk callback creating auth binding", {
+        userId: user.id,
+        providerUserId: maskValue(profile.providerUserId)
+      });
       await prisma.authBinding.create({
         data: {
           userId: user.id,
@@ -182,17 +263,41 @@ export async function GET(request: NextRequest) {
           avatar: profile.avatar || null
         }
       });
+
+      console.info("DingTalk callback auth binding created", {
+        userId: user.id,
+        providerUserId: maskValue(profile.providerUserId)
+      });
     }
 
     if (!user || !user.isActive || user.isDeleted) {
-      return redirectToLogin(request, "dingtalk_oauth_failed");
+      console.warn("DingTalk callback user is unavailable after binding lookup", {
+        userId: user?.id ?? null,
+        isActive: user?.isActive ?? null,
+        isDeleted: user?.isDeleted ?? null
+      });
+      return redirectToLogin(request, "dingtalk_binding_failed");
     }
 
-    const token = await signSession({
-      id: user.id,
-      username: user.username,
-      name: user.name
+    console.info("DingTalk callback creating session", {
+      userId: user.id,
+      username: user.username
     });
+
+    let token: string;
+    try {
+      token = await signSession({
+        id: user.id,
+        username: user.username,
+        name: user.name
+      });
+    } catch (error) {
+      console.error("DingTalk callback session signing failed", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      return redirectToLogin(request, "dingtalk_session_failed");
+    }
 
     cookies().set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
@@ -200,6 +305,11 @@ export async function GET(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24 * 7
+    });
+
+    console.info("DingTalk callback session cookie written", {
+      cookieName: SESSION_COOKIE_NAME,
+      token: maskValue(token)
     });
 
     await auditLogService.log({
@@ -211,13 +321,39 @@ export async function GET(request: NextRequest) {
       message: "钉钉登录"
     });
 
-    return NextResponse.redirect(new URL("/dashboard", getAppOrigin(request)));
+    const redirectUrl = new URL("/dashboard", getAppOrigin(request));
+    console.info("DingTalk callback completed successfully", {
+      redirectTo: redirectUrl.toString(),
+      userId: user.id
+    });
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (message.includes("未获取到钉钉用户身份")) {
-      return redirectToLogin(request, "dingtalk_userid_missing");
+    const appErrorCode = error instanceof AppError ? error.code : null;
+
+    console.error("DingTalk callback failed", {
+      code: appErrorCode,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      prismaCode: error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined,
+      prismaMeta: error instanceof Prisma.PrismaClientKnownRequestError ? error.meta : undefined,
+      prismaMessage: error instanceof Prisma.PrismaClientInitializationError ? error.message : undefined
+    });
+
+    if (appErrorCode === "DINGTALK_USERINFO_FAILED") {
+      return redirectToLogin(request, "dingtalk_userinfo_failed");
     }
-    console.error("DingTalk callback failed", error);
+    if (appErrorCode === "DINGTALK_TOKEN_FAILED") {
+      return redirectToLogin(request, "dingtalk_token_failed");
+    }
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError ||
+      error instanceof Prisma.PrismaClientValidationError ||
+      error instanceof Prisma.PrismaClientInitializationError ||
+      error instanceof Prisma.PrismaClientRustPanicError ||
+      error instanceof Prisma.PrismaClientUnknownRequestError
+    ) {
+      return redirectToLogin(request, "dingtalk_binding_failed");
+    }
     return redirectToLogin(request, "dingtalk_oauth_failed");
   }
 }

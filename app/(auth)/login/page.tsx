@@ -55,8 +55,15 @@ export default function LoginPage() {
     switch (errorCode) {
       case "dingtalk_state_invalid":
         return "钉钉登录校验失败，请重新发起登录";
+      case "dingtalk_token_failed":
+        return "钉钉授权令牌获取失败，请稍后重试";
       case "dingtalk_userid_missing":
-        return "未获取到钉钉用户身份，请联系管理员";
+      case "dingtalk_userinfo_failed":
+        return "钉钉用户信息获取失败，请联系管理员";
+      case "dingtalk_binding_failed":
+        return "本地账户绑定失败，请联系管理员";
+      case "dingtalk_session_failed":
+        return "登录会话创建失败，请稍后重试";
       case "dingtalk_oauth_failed":
         return "钉钉登录失败，请稍后重试";
       default:
