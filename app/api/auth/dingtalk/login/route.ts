@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 import { buildDingTalkAuthUrl, createDingTalkState } from "@/lib/dingtalk";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const state = createDingTalkState();
 

@@ -15,6 +15,8 @@ import { prisma } from "@/lib/prisma";
 import { ROLE_CODES } from "@/lib/permissions";
 import { auditLogService } from "@/modules/core/audit-log.service";
 
+export const dynamic = "force-dynamic";
+
 function redirectToLogin(req: NextRequest, error: string, debug?: string) {
   const url = new URL("/login", req.url);
   url.searchParams.set("error", error);
