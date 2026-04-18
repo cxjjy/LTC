@@ -52,7 +52,13 @@ export const costListConfig: ListPageConfig = {
 
 export function buildCostFields(projectOptions: SelectOption[]): EntityFormField<CreateCostDto>[] {
   return [
-    { name: "projectId", label: "项目", type: "select", options: projectOptions },
+    {
+      name: "projectId",
+      label: "项目",
+      type: "select",
+      options: projectOptions,
+      requestUrl: "/api/options/projects"
+    },
     { name: "title", label: "成本标题", type: "text" },
     { name: "category", label: "成本类别", type: "select", options: costCategoryOptions },
     { name: "amount", label: "金额", type: "number" },

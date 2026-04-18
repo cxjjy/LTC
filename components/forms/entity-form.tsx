@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { FormSection } from "@/components/form-section";
 import { PageContainer } from "@/components/page-container";
 import { SectionCard } from "@/components/section-card";
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getUserFriendlyError, type ApiErrorPayload, type ApiSuccessPayload } from "@/lib/ui-error";
 import type { SelectOption } from "@/types/common";
@@ -23,6 +23,7 @@ export type EntityFormField<T = unknown> = {
   type: "text" | "number" | "date" | "textarea" | "select";
   placeholder?: string;
   options?: SelectOption[];
+  requestUrl?: string;
   _type?: T;
 };
 
@@ -135,21 +136,14 @@ function FieldRenderer({
         {field.type === "textarea" ? (
           <Textarea id={field.name} placeholder={field.placeholder} {...form.register(field.name)} />
         ) : field.type === "select" ? (
-          <Select
-            defaultValue={String(form.getValues(field.name) ?? "")}
+          <SearchableSelect
+            value={String(form.watch(field.name) ?? "")}
             onValueChange={(value) => form.setValue(field.name, value, { shouldValidate: true })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={`请选择${field.label}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {(field.options ?? []).map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={field.options ?? []}
+            requestUrl={field.requestUrl}
+            placeholder={`请选择${field.label}`}
+            searchPlaceholder={`搜索${field.label}`}
+          />
         ) : (
           <Input
             id={field.name}

@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/section-card";
 import { SearchBar } from "@/components/search-bar";
@@ -22,18 +23,13 @@ export function ListFilter({ keyword, status, statusOptions = [] }: ListFilterPr
               placeholder="搜索编号、名称或关键字"
             />
           </div>
-          <select
+          <SearchableSelect
             name="status"
             defaultValue={status}
-            className="control-surface flex h-10 rounded-[var(--radius-control)] px-3.5 py-2 text-sm text-foreground outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.10)]"
-          >
-            <option value="">全部状态</option>
-            {statusOptions.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+            options={statusOptions}
+            placeholder="全部状态"
+            searchPlaceholder="搜索状态"
+          />
           <Button type="submit" variant="secondary">
             <Search className="h-4 w-4" />
             筛选

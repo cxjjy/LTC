@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState
 } from "react";
@@ -26,23 +27,98 @@ type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+const TOAST_DURATION = 4200;
+
 const toneStyles: Record<
   ToastTone,
-  { wrapper: string; icon: React.ComponentType<{ className?: string }> }
+  {
+    wrapper: string;
+    iconWrap: string;
+    progress: string;
+    eyebrow: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }
 > = {
   success: {
-    wrapper: "border-[rgba(16,185,129,0.18)] bg-[rgba(16,185,129,0.08)] text-[rgb(4,120,87)]",
+    wrapper:
+      "border-[rgba(15,23,42,0.08)] bg-[rgba(255,255,255,0.96)] text-[rgb(15,23,42)]",
+    iconWrap: "bg-[rgba(34,197,94,0.10)] text-[rgb(21,128,61)]",
+    progress: "bg-[rgb(34,197,94)]",
+    eyebrow: "text-[rgb(21,128,61)]",
     icon: CheckCircle2
   },
   error: {
-    wrapper: "border-[rgba(239,68,68,0.18)] bg-[rgba(239,68,68,0.08)] text-[rgb(185,28,28)]",
+    wrapper:
+      "border-[rgba(15,23,42,0.08)] bg-[rgba(255,255,255,0.96)] text-[rgb(15,23,42)]",
+    iconWrap: "bg-[rgba(239,68,68,0.10)] text-[rgb(220,38,38)]",
+    progress: "bg-[rgb(239,68,68)]",
+    eyebrow: "text-[rgb(220,38,38)]",
     icon: XCircle
   },
   warning: {
-    wrapper: "border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.10)] text-[rgb(180,83,9)]",
+    wrapper:
+      "border-[rgba(15,23,42,0.08)] bg-[rgba(255,255,255,0.96)] text-[rgb(15,23,42)]",
+    iconWrap: "bg-[rgba(245,158,11,0.11)] text-[rgb(217,119,6)]",
+    progress: "bg-[rgb(245,158,11)]",
+    eyebrow: "text-[rgb(217,119,6)]",
     icon: AlertTriangle
   }
 };
+
+const toneLabels: Record<ToastTone, string> = {
+  success: "成功通知",
+  error: "异常提醒",
+  warning: "注意事项"
+};
+
+function ToastCard({
+  item,
+  onClose
+}: {
+  item: ToastItem;
+  onClose: () => void;
+}) {
+  const tone = toneStyles[item.tone];
+  const Icon = tone.icon;
+
+  useEffect(() => {
+    const timer = window.setTimeout(onClose, TOAST_DURATION);
+    return () => window.clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div
+      className={cn(
+        "pointer-events-auto relative overflow-hidden rounded-[16px] border p-4 shadow-[0_12px_30px_rgba(15,23,42,0.10)] backdrop-blur-[10px] transition duration-300 animate-[toast-in_180ms_ease-out]",
+        tone.wrapper
+      )}
+    >
+      <div className={cn("absolute inset-x-0 top-0 h-[3px]", tone.progress)} />
+      <div className="flex items-start gap-3">
+        <div className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]", tone.iconWrap)}>
+          <Icon className="h-4.5 w-4.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className={cn("mb-1 text-[11px] font-semibold uppercase tracking-[0.08em]", tone.eyebrow)}>
+            {toneLabels[item.tone]}
+          </div>
+          <div className="text-[14px] font-semibold leading-5 text-foreground">{item.title}</div>
+          {item.description ? (
+            <div className="mt-1 text-[13px] leading-5 text-foreground/68">{item.description}</div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className="rounded-[10px] p-1.5 text-foreground/38 transition hover:bg-[rgba(15,23,42,0.05)] hover:text-foreground/72"
+          onClick={onClose}
+          aria-label="关闭提示"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
@@ -50,10 +126,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const pushToast = useCallback((toast: Omit<ToastItem, "id">) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setItems((current) => [...current, { ...toast, id }]);
-
-    window.setTimeout(() => {
-      setItems((current) => current.filter((item) => item.id !== id));
-    }, 3200);
   }, []);
 
   const value = useMemo(() => ({ pushToast }), [pushToast]);
@@ -61,36 +133,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-5 top-5 z-[120] flex w-[min(92vw,360px)] flex-col gap-3">
+      <div className="pointer-events-none fixed right-5 top-5 z-[120] flex w-[min(92vw,380px)] flex-col gap-2.5">
         {items.map((item) => {
-          const tone = toneStyles[item.tone];
-          const Icon = tone.icon;
-
           return (
-            <div
+            <ToastCard
               key={item.id}
-              className={cn(
-                "pointer-events-auto surface-card-strong rounded-[14px] border px-4 py-3 shadow-[var(--shadow-hover)]",
-                tone.wrapper
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <Icon className="mt-0.5 h-5 w-5 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold">{item.title}</div>
-                  {item.description ? (
-                    <div className="mt-1 text-sm text-foreground/80">{item.description}</div>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  className="rounded-full p-1 text-current/70 transition hover:bg-white/40 hover:text-current"
-                  onClick={() => setItems((current) => current.filter((toast) => toast.id !== item.id))}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+              item={item}
+              onClose={() => setItems((current) => current.filter((toast) => toast.id !== item.id))}
+            />
           );
         })}
       </div>

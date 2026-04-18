@@ -14,6 +14,7 @@ import {
 } from "@/lib/dingtalk";
 import { prisma } from "@/lib/prisma";
 import { ROLE_CODES } from "@/lib/permissions";
+import { generateUniqueReadableUsername, normalizeDisplayName } from "@/lib/user-identity";
 import { auditLogService } from "@/modules/core/audit-log.service";
 
 export const dynamic = "force-dynamic";
@@ -79,15 +80,13 @@ function redirectToLogin(req: NextRequest, error: string, debug?: string) {
   return NextResponse.redirect(url);
 }
 
-function buildUsername(profile: DingTalkUserProfile) {
-  const base = `dd_${profile.providerUserId.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 32) || Date.now()}`;
-  return base.slice(0, 100);
-}
-
 async function createUserFromDingTalk(profile: DingTalkUserProfile) {
+  const displayName = normalizeDisplayName(profile.nick);
+
   console.info("DingTalk callback creating local user", {
     providerUserId: maskValue(profile.providerUserId),
-    nick: profile.nick ?? null,
+    dingUserId: maskValue(profile.userId ?? null),
+    displayName,
     email: profile.email ?? null,
     mobile: maskValue(profile.mobile)
   });
@@ -100,12 +99,14 @@ async function createUserFromDingTalk(profile: DingTalkUserProfile) {
   });
 
   const fallbackPasswordHash = await bcrypt.hash("DINGTALK_LOGIN_ONLY", 10);
-  const username = buildUsername(profile);
+  const username = await generateUniqueReadableUsername(displayName);
 
   const created = await prisma.user.create({
     data: {
+      dingUserId: profile.userId || profile.providerUserId,
+      displayName,
       username,
-      name: profile.nick || "钉钉用户",
+      name: displayName,
       role: UserRole.VIEWER,
       isActive: true,
       email: profile.email || null,
@@ -268,6 +269,44 @@ export async function GET(request: NextRequest) {
         userId: user.id,
         providerUserId: maskValue(profile.providerUserId)
       });
+    } else {
+      const displayName = normalizeDisplayName(profile.nick);
+      const nextDingUserId = profile.userId || profile.providerUserId;
+
+      const shouldUpdateIdentity =
+        user.displayName !== displayName ||
+        user.name !== displayName ||
+        user.dingUserId !== nextDingUserId ||
+        (profile.email && user.email !== profile.email) ||
+        (profile.mobile && user.phone !== profile.mobile);
+
+      if (shouldUpdateIdentity) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            displayName,
+            name: displayName,
+            dingUserId: nextDingUserId,
+            email: profile.email || user.email || null,
+            phone: profile.mobile || user.phone || null
+          },
+          include: {
+            userRoles: {
+              include: {
+                role: {
+                  include: {
+                    rolePermissions: {
+                      include: {
+                        permission: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
     }
 
     if (!user || !user.isActive || user.isDeleted) {
@@ -289,7 +328,7 @@ export async function GET(request: NextRequest) {
       token = await signSession({
         id: user.id,
         username: user.username,
-        name: user.name
+        name: user.displayName
       });
     } catch (error) {
       console.error("DingTalk callback session signing failed", {

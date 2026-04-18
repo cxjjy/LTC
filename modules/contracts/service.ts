@@ -17,6 +17,7 @@ import { generateBusinessCode } from "@/modules/core/code-generator.service";
 import { toDecimal } from "@/modules/core/decimal";
 import { assertContractStatusTransition } from "@/modules/core/status-transition-validator";
 import { contractAttachmentService } from "@/modules/contracts/attachment.service";
+import { opportunityContractApprovalService } from "@/modules/opportunity-contract-approvals/service";
 import type {
   ChangeContractStatusDto,
   CreateContractDto,
@@ -140,7 +141,7 @@ class ContractService extends BaseCrudService<unknown> {
     };
   }
 
-  async create(data: CreateContractDto, user: SessionUser) {
+  async create(data: CreateContractDto, user: SessionUser, options?: { approvalId?: string }) {
     assertCanAccessRecord(user, "contract", "create");
     if (data.status === ContractStatus.EFFECTIVE) {
       throw badRequest("合同需先上传附件，再变更为已生效");
@@ -154,6 +155,23 @@ class ContractService extends BaseCrudService<unknown> {
 
     if (!project) {
       throw notFound("项目不存在");
+    }
+
+    const approval = options?.approvalId
+      ? await opportunityContractApprovalService.ensureApprovedForOpportunity(project.opportunityId, data.projectId)
+      : null;
+
+    if (approval?.createdContractId) {
+      const existingContract = await prisma.contract.findFirst({
+        where: {
+          id: approval.createdContractId,
+          isDeleted: false
+        }
+      });
+
+      if (existingContract) {
+        throw badRequest("该审批单已创建合同，请勿重复创建");
+      }
     }
 
     const code = await generateBusinessCode(EntityType.CONTRACT);
@@ -175,6 +193,28 @@ class ContractService extends BaseCrudService<unknown> {
       actorId: user.id,
       message: "创建合同"
     });
+
+    if (approval) {
+      await prisma.opportunityContractApproval.update({
+        where: { id: approval.id },
+        data: {
+          createdContractId: (record as { id: string }).id
+        }
+      });
+
+      await auditLogService.log({
+        entityType: EntityType.OPPORTUNITY,
+        entityId: project.opportunityId,
+        action: "CONVERT",
+        actorId: user.id,
+        message: "审批通过后进入合同创建流程",
+        payload: {
+          approvalId: approval.id,
+          contractId: (record as { id: string }).id,
+          contractCode: code
+        }
+      });
+    }
 
     return record;
   }

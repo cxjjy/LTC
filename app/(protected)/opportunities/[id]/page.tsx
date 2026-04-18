@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DeleteAction } from "@/components/delete-action";
 import { DetailGrid } from "@/components/detail-grid";
 import { LtcChain } from "@/components/ltc-chain";
+import { OpportunityContractApprovalPanel } from "@/components/opportunity-contract-approval-panel";
 import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
 import { opportunityStageLabels } from "@/lib/constants";
@@ -15,6 +16,7 @@ import { decimalToNumber } from "@/modules/core/decimal";
 import { calculateOpportunityEstimate } from "@/modules/opportunities/profit";
 import { opportunityService } from "@/modules/opportunities/service";
 import { OpportunityConvertForm } from "@/modules/opportunities/ui/convert-form";
+import { opportunityContractApprovalService } from "@/modules/opportunity-contract-approvals/service";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function OpportunityDetailPage({ params }: { params: { id: string } }) {
@@ -22,8 +24,15 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
   const canUpdate = canAccessRecord(user, "opportunity", "update");
   const canDelete = canAccessRecord(user, "opportunity", "delete");
   const canViewAuditLog = canAccessRecord(user, "auditLog", "view");
+  const canViewContractApproval = canAccessRecord(user, "contractApproval", "view");
+  const canApplyContractApproval = canAccessRecord(user, "contractApproval", "create");
+  const canReviewContractApproval = canAccessRecord(user, "contractApproval", "status");
+  const canCreateContract = canAccessRecord(user, "contract", "create");
   const deleteCopy = getDeleteCopy("opportunity");
   const opportunity = (await opportunityService.getDetail(params.id, user)) as any;
+  const latestApproval = canViewContractApproval
+    ? await opportunityContractApprovalService.getLatestByOpportunity(params.id, user)
+    : null;
   const audits = canViewAuditLog
     ? ((await auditLogModuleService.listByEntity("OPPORTUNITY", opportunity.id, user)) as any[])
     : [];
@@ -153,6 +162,17 @@ export default async function OpportunityDetailPage({ params }: { params: { id: 
         </SectionCard>
         <OpportunityConvertForm opportunityId={opportunity.id} defaultName={`${opportunity.name} 项目`} />
       </div>
+      {canViewContractApproval ? (
+        <OpportunityContractApprovalPanel
+          opportunityId={opportunity.id}
+          latestApproval={latestApproval}
+          defaultProjectId={opportunity.projects[0]?.id}
+          canApply={canApplyContractApproval}
+          canReview={canReviewContractApproval}
+          canCreateContract={canCreateContract && Boolean(opportunity.projects[0]?.id)}
+          canAutoCreateContract={canCreateContract && Boolean(opportunity.projects[0]?.id)}
+        />
+      ) : null}
       {canViewAuditLog ? (
         <SectionCard title="审计日志">
           <div className="space-y-3 text-sm">

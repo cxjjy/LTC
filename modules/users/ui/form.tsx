@@ -31,7 +31,7 @@ type UserFormProps = {
 
 type UserFormValues = {
   username: string;
-  name: string;
+  displayName: string;
   email?: string;
   phone?: string;
   password?: string;
@@ -48,7 +48,7 @@ export function UserForm({ mode, userId, roles, defaultValues }: UserFormProps) 
     resolver: zodResolver(schema as any),
     defaultValues: {
       username: "",
-      name: "",
+      displayName: "",
       email: "",
       phone: "",
       isActive: true,
@@ -95,11 +95,11 @@ export function UserForm({ mode, userId, roles, defaultValues }: UserFormProps) 
         <form onSubmit={onSubmit} className="grid gap-6">
           <FormSection title="基本信息">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="用户名" error={form.formState.errors.username?.message}>
-                <Input {...form.register("username")} placeholder="输入用户名" />
+              <Field label="展示名称" error={form.formState.errors.displayName?.message}>
+                <Input {...form.register("displayName")} placeholder="输入展示名称" />
               </Field>
-              <Field label="姓名" error={form.formState.errors.name?.message}>
-                <Input {...form.register("name")} placeholder="输入姓名" />
+              <Field label="用户名" error={form.formState.errors.username?.message}>
+                <Input {...form.register("username")} placeholder="输入可读登录账号" />
               </Field>
               <Field label="邮箱" error={form.formState.errors.email?.message}>
                 <Input {...form.register("email")} placeholder="输入邮箱" />

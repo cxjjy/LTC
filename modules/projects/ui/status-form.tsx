@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserFriendlyError, type ApiErrorPayload } from "@/lib/ui-error";
 import type { SelectOption } from "@/types/common";
 
@@ -30,18 +30,14 @@ export function ProjectStatusForm({
         <div>
           <Label>目标状态</Label>
           <div className="mt-2">
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={status}
+              onValueChange={setStatus}
+              options={options}
+              placeholder="请选择目标状态"
+              searchPlaceholder="搜索状态"
+              clearable={false}
+            />
           </div>
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}

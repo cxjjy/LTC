@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { ArrowUpDown, ChevronDown, Columns3, Download, Filter, Plus, RotateCcw, Search, X } from "lucide-react";
 
 import { DataTable, type DataColumn } from "@/components/data-table";
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 import {
   Dialog,
   DialogContent,
@@ -198,17 +199,14 @@ export function SortSelector({
       <div className="space-y-3 p-2">
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">排序字段</Label>
-          <select
+          <SearchableSelect
             value={sortBy}
-            onChange={(event) => setSortBy(event.target.value)}
-            className="control-surface h-9 w-full rounded-[10px] px-3 text-sm outline-none"
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onValueChange={setSortBy}
+            options={sortOptions}
+            placeholder="请选择排序字段"
+            searchPlaceholder="搜索排序字段"
+            clearable={false}
+          />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -337,18 +335,13 @@ function FilterDialog({
                   <div key={field.name} className="space-y-2">
                     <Label htmlFor={`filter-${field.name}`}>{field.label}</Label>
                     {field.type === "select" ? (
-                      <select
-                        id={`filter-${field.name}`}
-                        {...form.register(field.name)}
-                        className="control-surface h-9 w-full rounded-[10px] px-3 text-sm outline-none"
-                      >
-                        <option value="">全部</option>
-                        {(field.options ?? []).map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                      <SearchableSelect
+                        value={String(form.watch(field.name) ?? "")}
+                        onValueChange={(value) => form.setValue(field.name, value, { shouldValidate: true })}
+                        options={field.options ?? []}
+                        placeholder={`全部${field.label}`}
+                        searchPlaceholder={`搜索${field.label}`}
+                      />
                     ) : (
                       <Input
                         id={`filter-${field.name}`}
@@ -531,17 +524,19 @@ export function ListPagination({
           </Button>
         </div>
 
-        <select
-          value={pageSize}
-          onChange={(event) => onPageSizeChange(Number(event.target.value))}
-          className="control-surface h-8 rounded-[8px] px-3 text-sm text-foreground outline-none"
-        >
-          {pageSizeOptions.map((option) => (
-            <option key={option} value={option}>
-              每页 {option} 条
-            </option>
-          ))}
-        </select>
+        <div className="w-[140px]">
+          <SearchableSelect
+            value={String(pageSize)}
+            onValueChange={(value) => onPageSizeChange(Number(value))}
+            options={pageSizeOptions.map((option) => ({
+              value: String(option),
+              label: `每页 ${option} 条`
+            }))}
+            placeholder="每页条数"
+            searchPlaceholder="搜索页大小"
+            clearable={false}
+          />
+        </div>
       </div>
     </div>
   );

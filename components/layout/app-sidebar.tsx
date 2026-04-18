@@ -41,12 +41,21 @@ const navGroups = [
     ]
   },
   {
-    label: "合同与资金",
+    label: "周报体系",
     items: [
-      { href: "/contracts", label: "合同管理", icon: FileText, resource: "contract" },
-      { href: "/costs", label: "成本管理", icon: CircleDollarSign, resource: "cost" },
-      { href: "/receivables", label: "回款管理", icon: HandCoins, resource: "receivable" }
+      { href: "/weekly-reports", label: "个人周报", icon: ClipboardList, resource: "weeklyReport" },
+      { href: "/project-weekly", label: "项目周报", icon: ClipboardList, resource: "projectWeekly" },
+      { href: "/management/weekly-summary", label: "管理汇总", icon: ClipboardList, resource: "managementWeekly" }
     ]
+  },
+      {
+        label: "合同与资金",
+        items: [
+          { href: "/contracts", label: "合同管理", icon: FileText, resource: "contract" },
+          { href: "/contract-approvals", label: "合同审批", icon: ClipboardList, resource: "contractApproval" },
+          { href: "/costs", label: "成本管理", icon: CircleDollarSign, resource: "cost" },
+          { href: "/receivables", label: "回款管理", icon: HandCoins, resource: "receivable" }
+        ]
   },
   {
     label: "系统管理",

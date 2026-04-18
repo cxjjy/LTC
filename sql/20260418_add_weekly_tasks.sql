@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS `weekly_tasks` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `type` VARCHAR(30) NOT NULL COMMENT 'risk | collaboration',
+  `content` TEXT NOT NULL,
+  `project_id` VARCHAR(191) NULL,
+  `source_report_id` BIGINT NOT NULL,
+  `source_item_id` BIGINT NULL,
+  `creator_id` VARCHAR(191) NOT NULL,
+  `assignee_id` VARCHAR(191) NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'open' COMMENT 'open | processing | done',
+  `priority` VARCHAR(20) NOT NULL DEFAULT 'medium',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_type_status` (`type`, `status`),
+  KEY `idx_project_id` (`project_id`),
+  KEY `idx_source_report_id` (`source_report_id`),
+  KEY `idx_source_item_id` (`source_item_id`),
+  KEY `idx_assignee_status` (`assignee_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='周报自动生成的轻量任务表';

@@ -53,7 +53,13 @@ export const projectListConfig: ListPageConfig = {
 
 export function buildProjectFields(opportunityOptions: SelectOption[]): EntityFormField<CreateProjectDto>[] {
   return [
-    { name: "opportunityId", label: "商机", type: "select", options: opportunityOptions },
+    {
+      name: "opportunityId",
+      label: "商机",
+      type: "select",
+      options: opportunityOptions,
+      requestUrl: "/api/options/opportunities"
+    },
     { name: "name", label: "项目名称", type: "text" },
     { name: "budgetAmount", label: "预算金额", type: "number" },
     { name: "plannedStartDate", label: "计划开始日期", type: "date" },

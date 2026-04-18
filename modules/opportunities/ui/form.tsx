@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { FormSection } from "@/components/form-section";
 import { PageContainer } from "@/components/page-container";
 import { SectionCard } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getUserFriendlyError, type ApiErrorPayload, type ApiSuccessPayload } from "@/lib/ui-error";
 import { formatCurrency } from "@/lib/utils";
@@ -120,21 +120,14 @@ export function OpportunityForm({
           <FormSection title="基本信息">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="客户" error={String(form.formState.errors.customerId?.message ?? "")}>
-                <Select
+                <SearchableSelect
                   value={String(form.watch("customerId") ?? "")}
                   onValueChange={(value) => form.setValue("customerId", value, { shouldValidate: true })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="请选择客户" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customerOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={customerOptions}
+                  requestUrl="/api/options/customers"
+                  placeholder="请选择客户"
+                  searchPlaceholder="搜索客户"
+                />
               </Field>
               <Field label="商机名称" error={String(form.formState.errors.name?.message ?? "")}>
                 <Input {...form.register("name")} placeholder="输入商机名称" />
@@ -146,21 +139,14 @@ export function OpportunityForm({
                 <Input type="number" {...form.register("winRate")} placeholder="例如 75" />
               </Field>
               <Field label="阶段" error={String(form.formState.errors.stage?.message ?? "")}>
-                <Select
+                <SearchableSelect
                   value={String(form.watch("stage") ?? "DISCOVERY")}
                   onValueChange={(value) => form.setValue("stage", value as OpportunityFormValues["stage"], { shouldValidate: true })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="请选择阶段" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {opportunityStageOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={opportunityStageOptions}
+                  placeholder="请选择阶段"
+                  searchPlaceholder="搜索阶段"
+                  clearable={false}
+                />
               </Field>
               <Field label="描述" className="md:col-span-2" error={String(form.formState.errors.description?.message ?? "")}>
                 <Textarea {...form.register("description")} placeholder="输入商机背景和关键说明" />

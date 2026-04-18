@@ -97,9 +97,157 @@ enum EntityType {
   AUDIT_LOG
 }
 
+model WeeklyReport {
+  id              BigInt    @id @default(autoincrement())
+  userId          String    @map("user_id") @db.VarChar(191)
+  weekStart       DateTime  @map("week_start") @db.Date
+  weekEnd         DateTime  @map("week_end") @db.Date
+  status          String    @default("draft") @db.VarChar(20)
+  summary         String?   @db.Text
+  submittedAt     DateTime? @map("submitted_at")
+  lastSavedAt     DateTime? @map("last_saved_at")
+  reviewNote      String?   @map("review_note") @db.Text
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewedBy      String?   @map("reviewed_by") @db.VarChar(191)
+  returnNote      String?   @map("return_note") @db.Text
+  returnedAt      DateTime? @map("returned_at")
+  returnedBy      String?   @map("returned_by") @db.VarChar(191)
+  overdueMarkedAt DateTime? @map("overdue_marked_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, weekStart], map: "uk_user_week")
+  @@index([weekStart], map: "idx_week_start")
+  @@index([status], map: "idx_status")
+  @@map("weekly_reports")
+}
+
+model WeeklyReportItem {
+  id                   BigInt    @id @default(autoincrement())
+  reportId             BigInt    @map("report_id")
+  itemType             String    @map("item_type") @db.VarChar(20)
+  content              String    @db.Text
+  priority             String    @default("medium") @db.VarChar(20)
+  needCoordination     Boolean   @default(false) @map("need_coordination")
+  expectedFinishAt     DateTime? @map("expected_finish_at") @db.Date
+  impactNote           String?   @map("impact_note") @db.Text
+  relatedProjectId     String?   @map("related_project_id") @db.VarChar(191)
+  relatedOpportunityId String?   @map("related_opportunity_id") @db.VarChar(191)
+  sortOrder            Int       @default(0) @map("sort_order")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@index([reportId], map: "idx_report_id")
+  @@index([itemType], map: "idx_item_type")
+  @@index([relatedProjectId], map: "idx_related_project_id")
+  @@index([relatedOpportunityId], map: "idx_related_opportunity_id")
+  @@map("weekly_report_items")
+}
+
+model ProjectWeeklySnapshot {
+  id                 BigInt   @id @default(autoincrement())
+  projectId          String   @map("project_id") @db.VarChar(191)
+  weekStart          DateTime @map("week_start") @db.Date
+  weekEnd            DateTime @map("week_end") @db.Date
+  progressSummary    String?  @map("progress_summary") @db.Text
+  costDelta          Decimal  @default(0) @map("cost_delta") @db.Decimal(18, 2)
+  receivableDelta    Decimal  @default(0) @map("receivable_delta") @db.Decimal(18, 2)
+  riskFlag           Boolean  @default(false) @map("risk_flag")
+  riskCount          Int      @default(0) @map("risk_count")
+  trafficLightStatus String   @default("green") @map("traffic_light_status") @db.VarChar(20)
+  weeklyActions      String?  @map("weekly_actions") @db.Text
+  ownerNote          String?  @map("owner_note") @db.Text
+  generatedAt        DateTime @default(now()) @map("generated_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@unique([projectId, weekStart], map: "uk_project_week")
+  @@index([weekStart], map: "idx_week_start")
+  @@index([riskFlag], map: "idx_risk_flag")
+  @@map("project_weekly_snapshots")
+}
+
+model WeeklyReportAuditRef {
+  id             BigInt   @id @default(autoincrement())
+  entityType     String   @map("entity_type") @db.VarChar(50)
+  entityId       String   @map("entity_id") @db.VarChar(191)
+  action         String   @db.VarChar(50)
+  operatorUserId String   @map("operator_user_id") @db.VarChar(191)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId], map: "idx_entity")
+  @@index([operatorUserId], map: "idx_operator")
+  @@index([createdAt], map: "idx_created_at")
+  @@map("weekly_report_audit_refs")
+}
+
+model WeeklyReportReminder {
+  id           BigInt   @id @default(autoincrement())
+  weekStart    DateTime @map("week_start") @db.Date
+  reportId     BigInt?  @map("report_id")
+  targetUserId String   @map("target_user_id") @db.VarChar(191)
+  message      String?  @db.VarChar(255)
+  status       String   @default("pending") @db.VarChar(20)
+  remindedBy   String   @map("reminded_by") @db.VarChar(191)
+  remindedAt   DateTime @default(now()) @map("reminded_at")
+
+  @@index([weekStart, targetUserId], map: "idx_week_target")
+  @@index([reportId], map: "idx_report_id")
+  @@index([status], map: "idx_status")
+  @@index([remindedBy], map: "idx_reminded_by")
+  @@map("weekly_report_reminders")
+}
+
+model WeeklyReportSuggestion {
+  id                   BigInt    @id @default(autoincrement())
+  userId               String    @map("user_id") @db.VarChar(191)
+  weekStart            DateTime  @map("week_start") @db.Date
+  sectionType          String    @map("section_type") @db.VarChar(20)
+  sourceType           String    @map("source_type") @db.VarChar(50)
+  sourceRef            String?   @map("source_ref") @db.VarChar(191)
+  reason               String?   @db.VarChar(255)
+  content              String    @db.Text
+  relatedProjectId     String?   @map("related_project_id") @db.VarChar(191)
+  relatedOpportunityId String?   @map("related_opportunity_id") @db.VarChar(191)
+  confidenceScore      Decimal   @default(0) @map("confidence_score") @db.Decimal(5, 2)
+  status               String    @default("pending") @db.VarChar(20)
+  extraPayload         Json?     @map("extra_payload")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId, weekStart, status], map: "idx_user_week_status")
+  @@index([sourceType], map: "idx_source_type")
+  @@index([relatedProjectId], map: "idx_related_project_id")
+  @@index([relatedOpportunityId], map: "idx_related_opportunity_id")
+  @@map("weekly_report_suggestions")
+}
+
+model WeeklyTask {
+  id             BigInt   @id @default(autoincrement())
+  type           String   @db.VarChar(30)
+  content        String   @db.Text
+  projectId      String?  @map("project_id") @db.VarChar(191)
+  sourceReportId BigInt   @map("source_report_id")
+  sourceItemId   BigInt?  @map("source_item_id")
+  creatorId      String   @map("creator_id") @db.VarChar(191)
+  assigneeId     String   @map("assignee_id") @db.VarChar(191)
+  status         String   @default("open") @db.VarChar(20)
+  priority       String   @default("medium") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([type, status], map: "idx_type_status")
+  @@index([projectId], map: "idx_project_id")
+  @@index([sourceReportId], map: "idx_source_report_id")
+  @@index([sourceItemId], map: "idx_source_item_id")
+  @@index([assigneeId, status], map: "idx_assignee_status")
+  @@map("weekly_tasks")
+}
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique @db.VarChar(100)
+  dingUserId   String?  @unique @map("ding_user_id") @db.VarChar(191)
+  displayName  String   @map("display_name") @db.VarChar(100)
   passwordHash String   @db.VarChar(255)
   name         String   @db.VarChar(100)
   role         UserRole @default(ADMIN)
@@ -354,6 +502,94 @@ model ContractAttachment {
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@index([contractId, createdAt])
+}
+
+model BizAttachment {
+  id         String   @id @default(cuid())
+  bizType    String   @map("biz_type") @db.VarChar(50)
+  bizId      String   @map("biz_id") @db.VarChar(191)
+  projectId  String?  @map("project_id") @db.VarChar(191)
+  contractId String?  @map("contract_id") @db.VarChar(191)
+  fileName   String   @map("file_name") @db.VarChar(255)
+  fileUrl    String   @map("file_url") @db.VarChar(500)
+  filePath   String   @map("file_path") @db.VarChar(500)
+  fileSize   Int      @map("file_size")
+  mimeType   String?  @map("mime_type") @db.VarChar(100)
+  uploadedBy String   @map("uploaded_by") @db.VarChar(191)
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  remark     String?  @db.Text
+  status     String   @default("active") @db.VarChar(20)
+
+  @@index([bizType, bizId], map: "idx_biz_type_id")
+  @@index([projectId, bizType], map: "idx_project_biz_type")
+  @@index([contractId, bizType], map: "idx_contract_biz_type")
+  @@index([uploadedAt], map: "idx_uploaded_at")
+  @@map("biz_attachments")
+}
+
+model InvoiceRecord {
+  id            String   @id @default(cuid())
+  contractId    String   @map("contract_id") @db.VarChar(191)
+  projectId     String?  @map("project_id") @db.VarChar(191)
+  invoiceNo     String   @map("invoice_no") @db.VarChar(100)
+  invoiceType   String   @map("invoice_type") @db.VarChar(50)
+  invoiceAmount Decimal  @map("invoice_amount") @db.Decimal(18, 2)
+  invoiceDate   DateTime @map("invoice_date") @db.Date
+  payerName     String?  @map("payer_name") @db.VarChar(200)
+  status        String   @default("issued") @db.VarChar(20)
+  attachmentId  String?  @map("attachment_id") @db.VarChar(191)
+  createdBy     String   @map("created_by") @db.VarChar(191)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([contractId, invoiceNo], map: "uk_contract_invoice_no")
+  @@index([projectId], map: "idx_project_id")
+  @@index([status], map: "idx_status")
+  @@index([invoiceDate], map: "idx_invoice_date")
+  @@map("invoice_records")
+}
+
+model PaymentRecord {
+  id            String   @id @default(cuid())
+  contractId    String   @map("contract_id") @db.VarChar(191)
+  projectId     String?  @map("project_id") @db.VarChar(191)
+  paymentAmount Decimal  @map("payment_amount") @db.Decimal(18, 2)
+  paymentDate   DateTime @map("payment_date") @db.Date
+  paymentMethod String?  @map("payment_method") @db.VarChar(50)
+  payerName     String?  @map("payer_name") @db.VarChar(200)
+  sourceType    String   @default("manual") @map("source_type") @db.VarChar(30)
+  sourceRef     String?  @map("source_ref") @db.VarChar(191)
+  remark        String?  @db.Text
+  createdBy     String   @map("created_by") @db.VarChar(191)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([contractId, paymentDate], map: "idx_contract_payment_date")
+  @@index([projectId], map: "idx_project_id")
+  @@index([sourceType], map: "idx_source_type")
+  @@map("payment_records")
+}
+
+model OpportunityContractApproval {
+  id                String   @id @default(cuid())
+  opportunityId     String   @map("opportunity_id") @db.VarChar(191)
+  applicantId       String   @map("applicant_id") @db.VarChar(191)
+  approverId        String   @map("approver_id") @db.VarChar(191)
+  status            String   @default("pending") @db.VarChar(20)
+  approvalComment   String?  @map("approval_comment") @db.Text
+  submittedAt       DateTime @default(now()) @map("submitted_at")
+  approvedAt        DateTime? @map("approved_at")
+  rejectedAt        DateTime? @map("rejected_at")
+  createdContractId String?  @map("created_contract_id") @db.VarChar(191)
+  snapshotJson      Json?    @map("snapshot_json")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([opportunityId, status], map: "idx_opportunity_status")
+  @@index([applicantId, status], map: "idx_applicant_status")
+  @@index([approverId, status], map: "idx_approver_status")
+  @@index([submittedAt], map: "idx_submitted_at")
+  @@map("opportunity_contract_approvals")
 }
 
 model Delivery {

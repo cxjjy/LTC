@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BriefcaseBusiness, Building2, ChartColumn, ShieldCheck } from "lucide-react";
 
@@ -209,10 +210,12 @@ export default function LoginPage() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
 
-                <Button asChild type="button" variant="outline" className="h-10 w-full justify-center">
-                  <Link href="/api/auth/dingtalk/login">使用钉钉登录</Link>
+                <Button asChild type="button" variant="outline" className="h-10 w-full justify-center gap-2">
+                  <Link href="/api/auth/dingtalk/login">
+                    <Image src="/dingtalk.svg" alt="钉钉" width={18} height={18} className="h-[18px] w-[18px]" />
+                    使用钉钉登录
+                  </Link>
                 </Button>
-
               </form>
             </div>
           </div>

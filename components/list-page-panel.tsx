@@ -11,6 +11,7 @@ import {
   Upload
 } from "lucide-react";
 
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -130,18 +131,15 @@ export function SecondaryToolbar({
           />
         </div>
         {statusOptions.length ? (
-          <select
-            name="status"
-            defaultValue={status}
-            className="control-surface h-9 rounded-[10px] px-3 text-sm text-foreground outline-none transition-all duration-150 focus:border-[rgba(59,130,246,0.42)] focus:ring-2 focus:ring-[rgba(59,130,246,0.16)]"
-          >
-            <option value="">全部状态</option>
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div className="w-[200px] min-w-[180px]">
+            <SearchableSelect
+              name="status"
+              defaultValue={status}
+              options={statusOptions}
+              placeholder="全部状态"
+              searchPlaceholder="搜索状态"
+            />
+          </div>
         ) : null}
         <Button variant="toolbar" type="submit">
           <Filter className="h-4 w-4" />

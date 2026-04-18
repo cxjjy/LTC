@@ -26,7 +26,11 @@ export type ResourceName =
   | "lead"
   | "opportunity"
   | "project"
+  | "weeklyReport"
+  | "projectWeekly"
+  | "managementWeekly"
   | "contract"
+  | "contractApproval"
   | "delivery"
   | "cost"
   | "receivable"
@@ -41,7 +45,11 @@ const resourceModuleMap: Record<ResourceName, PermissionModule> = {
   lead: "lead",
   opportunity: "opportunity",
   project: "project",
+  weeklyReport: "weekly_report",
+  projectWeekly: "project_weekly",
+  managementWeekly: "management_weekly",
   contract: "contract",
+  contractApproval: "contract_approval",
   delivery: "delivery",
   cost: "cost",
   receivable: "receivable",

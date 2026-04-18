@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   BriefcaseBusiness,
   CircleDollarSign,
+  Download,
   FolderKanban
 } from "lucide-react";
 import {
@@ -12,6 +13,7 @@ import {
   ReceivableStatus
 } from "@prisma/client";
 
+import { BizAttachmentManager } from "@/components/biz-attachment-manager";
 import { DetailGrid } from "@/components/detail-grid";
 import { DeleteAction } from "@/components/delete-action";
 import { LtcChain } from "@/components/ltc-chain";
@@ -31,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { requireSessionUser } from "@/lib/auth";
 import {
+  bizAttachmentTypeLabels,
   contractStatusLabels,
   costCategoryLabels,
   deliveryStatusLabels,
@@ -42,6 +45,7 @@ import { prisma } from "@/lib/prisma";
 import { canAccessRecord, requirePagePermission } from "@/lib/rbac";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 import { auditLogModuleService } from "@/modules/audit-logs/service";
+import { bizAttachmentService } from "@/modules/biz-attachments/service";
 import { decimalToNumber, sumDecimalValues } from "@/modules/core/decimal";
 import { projectService } from "@/modules/projects/service";
 import { projectStatusOptions } from "@/modules/projects/ui/config";
@@ -49,6 +53,7 @@ import type { PageSearchParams } from "@/types/common";
 
 const detailTabs = [
   { key: "contracts", label: "合同" },
+  { key: "materials", label: "资料" },
   { key: "deliveries", label: "交付" },
   { key: "costs", label: "成本" },
   { key: "receivables", label: "回款" },
@@ -113,12 +118,22 @@ export default async function ProjectDetailPage({
   const canDelete = canAccessRecord(user, "project", "delete");
   const canChangeStatus = canAccessRecord(user, "project", "status");
   const canViewAuditLog = canAccessRecord(user, "auditLog", "view");
+  const canManageMaterials =
+    canUpdate ||
+    canAccessRecord(user, "delivery", "update") ||
+    user.role === "FINANCE" ||
+    user.roles.some((item) => item.code === "FINANCE" || item.code === "SUPER_ADMIN");
   const deleteCopy = getDeleteCopy("project");
   const visibleDetailTabs = canViewAuditLog ? detailTabs : detailTabs.filter((item) => item.key !== "logs");
   const activeTab = visibleDetailTabs.some((item) => item.key === searchParams.tab)
     ? (searchParams.tab as DetailTab)
     : "contracts";
   const project = (await projectService.getDetail(params.id, user)) as any;
+  const [acceptanceFiles, settlementFiles, relatedContractFiles] = await Promise.all([
+    bizAttachmentService.listByProject(params.id, ["acceptance"], user),
+    bizAttachmentService.listByProject(params.id, ["settlement"], user),
+    bizAttachmentService.listByProject(params.id, ["contract", "invoice"], user)
+  ]);
   const audits = canViewAuditLog
     ? ((await auditLogModuleService.listByEntity("PROJECT", project.id, user)) as any[])
     : [];
@@ -380,6 +395,69 @@ export default async function ProjectDetailPage({
                 </Table>
               </div>
             </SectionCard>
+          ) : null}
+
+          {activeTab === "materials" ? (
+            <div className="space-y-6">
+              <BizAttachmentManager
+                title="项目验收单"
+                description="归档验收确认单、验收报告等项目完工资料。"
+                uploadLabel="上传验收单"
+                emptyLabel="当前项目还没有验收资料。"
+                bizType="acceptance"
+                bizId={project.id}
+                projectId={project.id}
+                uploadUrl={`/api/projects/${project.id}/biz-attachments`}
+                attachments={acceptanceFiles}
+                canManage={canManageMaterials}
+              />
+              <BizAttachmentManager
+                title="项目结算单"
+                description="维护项目结算、补差和收尾资料。"
+                uploadLabel="上传结算单"
+                emptyLabel="当前项目还没有结算资料。"
+                bizType="settlement"
+                bizId={project.id}
+                projectId={project.id}
+                uploadUrl={`/api/projects/${project.id}/biz-attachments`}
+                attachments={settlementFiles}
+                canManage={canManageMaterials}
+              />
+              <SectionCard
+                title="关联合同资料"
+                description="汇总展示该项目下的合同电子版和发票附件，便于按项目整体查看。"
+              >
+                <div className="space-y-3">
+                  {relatedContractFiles.length ? (
+                    relatedContractFiles.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex flex-col gap-3 rounded-[12px] border border-border bg-[var(--color-background)] px-4 py-3 md:flex-row md:items-center md:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-foreground">{item.fileName}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {bizAttachmentTypeLabels[item.bizType as keyof typeof bizAttachmentTypeLabels] ?? item.bizType} ·{" "}
+                            {formatDateTime(item.uploadedAt)}
+                          </div>
+                          {item.remark ? <div className="mt-2 text-xs text-muted-foreground">备注：{item.remark}</div> : null}
+                        </div>
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={item.fileUrl}>
+                            <Download className="h-4 w-4" />
+                            下载
+                          </Link>
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[12px] border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+                      当前项目下暂无关联合同资料。
+                    </div>
+                  )}
+                </div>
+              </SectionCard>
+            </div>
           ) : null}
 
           {activeTab === "deliveries" ? (

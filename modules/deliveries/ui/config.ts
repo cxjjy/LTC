@@ -52,7 +52,13 @@ export const deliveryListConfig: ListPageConfig = {
 
 export function buildDeliveryFields(projectOptions: SelectOption[]): EntityFormField<CreateDeliveryDto>[] {
   return [
-    { name: "projectId", label: "项目", type: "select", options: projectOptions },
+    {
+      name: "projectId",
+      label: "项目",
+      type: "select",
+      options: projectOptions,
+      requestUrl: "/api/options/projects"
+    },
     { name: "title", label: "交付标题", type: "text" },
     { name: "ownerName", label: "负责人", type: "text" },
     { name: "plannedDate", label: "计划日期", type: "date" },

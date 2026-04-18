@@ -6,6 +6,7 @@ import { badRequest, notFound } from "@/lib/errors";
 import { legacyRoleFallbackMap, roleLabelMap, type RoleCode } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/rbac";
+import { normalizeDisplayName } from "@/lib/user-identity";
 import { auditLogService } from "@/modules/core/audit-log.service";
 import type { CreateUserInput, UpdateUserInput } from "@/modules/users/validation";
 
@@ -91,7 +92,8 @@ export const userManagementService = {
     const created = await prisma.user.create({
       data: {
         username: data.username,
-        name: data.name,
+        displayName: normalizeDisplayName(data.displayName),
+        name: normalizeDisplayName(data.displayName),
         email: data.email || null,
         phone: data.phone || null,
         passwordHash,
@@ -166,7 +168,8 @@ export const userManagementService = {
       where: { id },
       data: {
         username: data.username,
-        name: data.name,
+        displayName: normalizeDisplayName(data.displayName),
+        name: normalizeDisplayName(data.displayName),
         email: data.email || null,
         phone: data.phone || null,
         isActive: data.isActive,

@@ -1,9 +1,19 @@
 import * as React from "react";
 
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 
 export const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
+    if (type === "date") {
+      return <DatePicker className={className} ref={ref} {...props} />;
+    }
+
+    if (type === "time" || type === "datetime-local") {
+      return <TimePicker className={className} pickerType={type === "time" ? "time" : "datetime-local"} ref={ref} {...props} />;
+    }
+
     return (
       <input
         type={type}

@@ -56,7 +56,7 @@ export const authService = {
     return {
       id: user.id,
       username: user.username,
-      name: user.name,
+      name: user.displayName || user.name,
       role: primaryRoleCode,
       roleName: assignedRoles[0]?.name ?? roleLabelMap[primaryRoleCode as RoleCode] ?? primaryRoleCode,
       roles: assignedRoles.map((role) => ({

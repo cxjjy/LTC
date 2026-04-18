@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `weekly_report_suggestions` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '推荐主键',
+  `user_id` VARCHAR(191) NOT NULL COMMENT '用户ID',
+  `week_start` DATE NOT NULL COMMENT '周一日期',
+  `section_type` VARCHAR(20) NOT NULL COMMENT 'done/plan/risk',
+  `source_type` VARCHAR(50) NOT NULL COMMENT 'last_week_plan/active_project/ongoing_risk/coordination/project_update/opportunity_update',
+  `source_ref` VARCHAR(191) NULL COMMENT '来源引用ID',
+  `reason` VARCHAR(255) NULL COMMENT '推荐原因',
+  `content` TEXT NOT NULL COMMENT '推荐内容',
+  `related_project_id` VARCHAR(191) NULL COMMENT '关联项目ID',
+  `related_opportunity_id` VARCHAR(191) NULL COMMENT '关联商机ID',
+  `confidence_score` DECIMAL(5,2) NOT NULL DEFAULT 0 COMMENT '置信度',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT 'pending/applied/ignored',
+  `extra_payload` JSON NULL COMMENT '扩展字段载荷',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_week_status` (`user_id`, `week_start`, `status`),
+  KEY `idx_source_type` (`source_type`),
+  KEY `idx_related_project_id` (`related_project_id`),
+  KEY `idx_related_opportunity_id` (`related_opportunity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='个人周报系统推荐草稿表';

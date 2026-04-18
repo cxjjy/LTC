@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const userCreateSchema = z.object({
   username: z.string().min(2, "请输入用户名"),
-  name: z.string().min(2, "请输入姓名"),
+  displayName: z.string().min(2, "请输入展示名称"),
   email: z.string().email("邮箱格式不正确").optional().or(z.literal("")),
   phone: z.string().optional(),
   password: z.string().min(6, "初始密码至少 6 位"),
@@ -12,7 +12,7 @@ export const userCreateSchema = z.object({
 
 export const userUpdateSchema = z.object({
   username: z.string().min(2, "请输入用户名"),
-  name: z.string().min(2, "请输入姓名"),
+  displayName: z.string().min(2, "请输入展示名称"),
   email: z.string().email("邮箱格式不正确").optional().or(z.literal("")),
   phone: z.string().optional(),
   isActive: z.boolean().default(true),

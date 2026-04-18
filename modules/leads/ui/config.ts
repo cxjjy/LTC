@@ -53,7 +53,13 @@ export const leadListConfig: ListPageConfig = {
 
 export function buildLeadFields(customerOptions: SelectOption[]): EntityFormField<CreateLeadDto>[] {
   return [
-    { name: "customerId", label: "客户", type: "select", options: customerOptions },
+    {
+      name: "customerId",
+      label: "客户",
+      type: "select",
+      options: customerOptions,
+      requestUrl: "/api/options/customers"
+    },
     { name: "title", label: "线索标题", type: "text" },
     { name: "source", label: "线索来源", type: "text" },
     { name: "contactName", label: "联系人", type: "text" },

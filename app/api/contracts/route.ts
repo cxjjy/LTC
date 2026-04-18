@@ -16,6 +16,7 @@ export async function POST(request: Request) {
   return withApiHandler(async () => {
     const user = await requireApiUser();
     const body = contractCreateSchema.parse(await request.json());
-    return contractService.create(body, user);
+    const approvalId = new URL(request.url).searchParams.get("approvalId") ?? undefined;
+    return contractService.create(body, user, { approvalId });
   });
 }

@@ -55,7 +55,13 @@ export const receivableListConfig: ListPageConfig = {
 
 export function buildReceivableFields(contractOptions: SelectOption[]): EntityFormField<CreateReceivableDto>[] {
   return [
-    { name: "contractId", label: "合同", type: "select", options: contractOptions },
+    {
+      name: "contractId",
+      label: "合同",
+      type: "select",
+      options: contractOptions,
+      requestUrl: "/api/options/contracts"
+    },
     { name: "title", label: "回款标题", type: "text" },
     { name: "amountDue", label: "应收金额", type: "number" },
     { name: "dueDate", label: "应收日期", type: "date" },

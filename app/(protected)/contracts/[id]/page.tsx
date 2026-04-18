@@ -1,21 +1,27 @@
 import Link from "next/link";
 
-import { ContractAttachments } from "@/components/contract-attachments";
+import { BizAttachmentManager } from "@/components/biz-attachment-manager";
 import { DeleteAction } from "@/components/delete-action";
 import { DetailGrid } from "@/components/detail-grid";
+import { InvoiceRecordsPanel } from "@/components/invoice-records-panel";
 import { LtcChain } from "@/components/ltc-chain";
 import { PageHeader } from "@/components/page-header";
+import { PaymentRecordsPanel } from "@/components/payment-records-panel";
 import { SectionCard } from "@/components/section-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { contractStatusLabels } from "@/lib/constants";
 import { requireSessionUser } from "@/lib/auth";
 import { getDeleteCopy } from "@/lib/delete-config";
 import { canAccessRecord, requirePagePermission } from "@/lib/rbac";
 import { Button } from "@/components/ui/button";
+import { bizAttachmentService } from "@/modules/biz-attachments/service";
 import { auditLogModuleService } from "@/modules/audit-logs/service";
 import { decimalToNumber } from "@/modules/core/decimal";
 import { contractService } from "@/modules/contracts/service";
 import { contractStatusOptions } from "@/modules/contracts/ui/config";
 import { ContractStatusForm } from "@/modules/contracts/ui/status-form";
+import { invoiceRecordService } from "@/modules/invoice-records/service";
+import { paymentRecordService } from "@/modules/payment-records/service";
 import { formatCurrency, toDateInputValue } from "@/lib/utils";
 
 export default async function ContractDetailPage({ params }: { params: { id: string } }) {
@@ -25,12 +31,20 @@ export default async function ContractDetailPage({ params }: { params: { id: str
   const canChangeStatus = canAccessRecord(user, "contract", "status");
   const canViewAuditLog = canAccessRecord(user, "auditLog", "view");
   const canManageAttachments =
+    canUpdate ||
     user.role === "SUPER_ADMIN" ||
     user.role === "ADMIN" ||
     user.role === "FINANCE" ||
     user.roles.some((role) => role.code === "SUPER_ADMIN" || role.code === "FINANCE");
   const deleteCopy = getDeleteCopy("contract");
   const contract = (await contractService.getDetail(params.id, user)) as any;
+  const [contractFiles, invoiceRecords, paymentRecords, acceptanceFiles, settlementFiles] = await Promise.all([
+    bizAttachmentService.listByContract(contract.id, "contract", user),
+    invoiceRecordService.listByContract(contract.id, user),
+    paymentRecordService.listByContract(contract.id, user),
+    bizAttachmentService.listByProject(contract.project.id, ["acceptance"], user),
+    bizAttachmentService.listByProject(contract.project.id, ["settlement"], user)
+  ]);
   const audits = canViewAuditLog
     ? ((await auditLogModuleService.listByEntity("CONTRACT", contract.id, user)) as any[])
     : [];
@@ -109,7 +123,7 @@ export default async function ContractDetailPage({ params }: { params: { id: str
         {canChangeStatus ? (
           <ContractStatusForm contractId={contract.id} currentStatus={contract.status} options={contractStatusOptions} />
         ) : null}
-        <SectionCard title="回款记录列表" description="仅已生效合同可创建回款记录。">
+        <SectionCard title="应收计划" description="保留当前合同下原有应收计划链路，不影响新回款台账。">
           <div className="space-y-3 text-sm">
             {contract.receivables.length ? (
               contract.receivables.map((item: any) => (
@@ -123,11 +137,78 @@ export default async function ContractDetailPage({ params }: { params: { id: str
           </div>
         </SectionCard>
       </div>
-      <ContractAttachments
-        contractId={contract.id}
-        attachments={contract.attachments}
-        canManage={canManageAttachments}
-      />
+      <section className="workspace-panel overflow-hidden">
+        <Tabs defaultValue="contract-files">
+          <TabsList className="w-full px-6">
+            <TabsTrigger value="contract-files">合同电子版</TabsTrigger>
+            <TabsTrigger value="invoices">发票记录</TabsTrigger>
+            <TabsTrigger value="payments">回款记录</TabsTrigger>
+            <TabsTrigger value="materials">业务资料</TabsTrigger>
+          </TabsList>
+          <div className="px-6 py-5">
+            <TabsContent value="contract-files" className="mt-0">
+              <BizAttachmentManager
+                title="合同电子版"
+                description="维护合同原件、补充协议和签章扫描件。"
+                uploadLabel="上传合同"
+                emptyLabel="当前合同还没有上传电子版。"
+                bizType="contract"
+                bizId={contract.id}
+                projectId={contract.project.id}
+                uploadUrl={`/api/contracts/${contract.id}/biz-attachments`}
+                attachments={contractFiles}
+                canManage={canManageAttachments}
+              />
+            </TabsContent>
+            <TabsContent value="invoices" className="mt-0">
+              <InvoiceRecordsPanel
+                contractId={contract.id}
+                records={invoiceRecords.map((item: any) => ({
+                  ...item,
+                  invoiceAmount: decimalToNumber(item.invoiceAmount)
+                }))}
+                canManage={canManageAttachments}
+              />
+            </TabsContent>
+            <TabsContent value="payments" className="mt-0">
+              <PaymentRecordsPanel
+                contractId={contract.id}
+                records={paymentRecords.map((item: any) => ({
+                  ...item,
+                  paymentAmount: decimalToNumber(item.paymentAmount)
+                }))}
+                canManage={canManageAttachments}
+              />
+            </TabsContent>
+            <TabsContent value="materials" className="mt-0 space-y-6">
+              <BizAttachmentManager
+                title="项目验收单"
+                description="按项目维度沉淀验收确认资料，合同侧同步查看。"
+                uploadLabel="上传验收单"
+                emptyLabel="当前项目还没有验收资料。"
+                bizType="acceptance"
+                bizId={contract.project.id}
+                projectId={contract.project.id}
+                uploadUrl={`/api/contracts/${contract.id}/biz-attachments`}
+                attachments={acceptanceFiles}
+                canManage={canManageAttachments}
+              />
+              <BizAttachmentManager
+                title="项目结算单"
+                description="归档结算清单、补差说明等项目结算资料。"
+                uploadLabel="上传结算单"
+                emptyLabel="当前项目还没有结算资料。"
+                bizType="settlement"
+                bizId={contract.project.id}
+                projectId={contract.project.id}
+                uploadUrl={`/api/contracts/${contract.id}/biz-attachments`}
+                attachments={settlementFiles}
+                canManage={canManageAttachments}
+              />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </section>
       {canViewAuditLog ? (
         <SectionCard title="状态流转与审计">
           <div className="space-y-3 text-sm">

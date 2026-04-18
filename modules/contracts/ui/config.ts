@@ -56,7 +56,13 @@ export const contractListConfig: ListPageConfig = {
 
 export function buildContractFields(projectOptions: SelectOption[]): EntityFormField<CreateContractDto>[] {
   return [
-    { name: "projectId", label: "项目", type: "select", options: projectOptions },
+    {
+      name: "projectId",
+      label: "项目",
+      type: "select",
+      options: projectOptions,
+      requestUrl: "/api/options/projects"
+    },
     { name: "name", label: "合同名称", type: "text" },
     { name: "contractAmount", label: "合同金额", type: "number" },
     { name: "signedDate", label: "签署日期", type: "date" },

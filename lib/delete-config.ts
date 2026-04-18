@@ -31,10 +31,26 @@ const deleteCopyMap: Record<ResourceName, DeleteCopy> = {
     warning: "删除项目将影响其关联合同、交付、成本或回款的查看，请确认是否继续。",
     listPath: "/projects"
   },
+  weeklyReport: {
+    moduleLabel: "个人周报",
+    listPath: "/weekly-reports"
+  },
+  projectWeekly: {
+    moduleLabel: "项目周报",
+    listPath: "/project-weekly"
+  },
+  managementWeekly: {
+    moduleLabel: "管理周报",
+    listPath: "/management/weekly-summary"
+  },
   contract: {
     moduleLabel: "合同",
     warning: "删除合同后，相关回款记录可能失去默认入口，请确认是否继续。",
     listPath: "/contracts"
+  },
+  contractApproval: {
+    moduleLabel: "合同审批",
+    listPath: "/contract-approvals"
   },
   delivery: {
     moduleLabel: "交付",

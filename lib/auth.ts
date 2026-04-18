@@ -95,7 +95,7 @@ export async function getSessionUser() {
     return {
       id: user.id,
       username: user.username,
-      name: user.name,
+      name: user.displayName || user.name,
       role: derivedRoleCode,
       roleName: assignedRoles[0]?.name ?? roleLabelMap[derivedRoleCode as RoleCode] ?? derivedRoleCode,
       roles: assignedRoles.map((role) => ({
