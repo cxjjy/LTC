@@ -22,7 +22,7 @@ jobs:
           cache: npm
 
       - name: 安装依赖
-        run: npm install
+        run: npm ci
 
       - name: 生成 Prisma Client
         run: npx prisma generate
