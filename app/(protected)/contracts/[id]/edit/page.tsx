@@ -1,0 +1,37 @@
+import { PageHeader } from "@/components/page-header";
+import { requireSessionUser } from "@/lib/auth";
+import { requirePagePermission } from "@/lib/rbac";
+import { projectService } from "@/modules/projects/service";
+import { decimalToNumber } from "@/modules/core/decimal";
+import { contractService } from "@/modules/contracts/service";
+import { ContractForm } from "@/modules/contracts/ui/form";
+import { toDateInputValue } from "@/lib/utils";
+
+export default async function EditContractPage({ params }: { params: { id: string } }) {
+  const user = await requirePagePermission(requireSessionUser(), "contract", "update");
+  const contract = (await contractService.getDetail(params.id, user)) as any;
+  const projectOptions = await projectService.getOptions(user);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="编辑合同" description={`正在编辑 ${contract.name}`} />
+      <ContractForm
+        mode="edit"
+        contractId={contract.id}
+        projectOptions={projectOptions}
+        defaultValues={{
+          status: contract.status,
+          projectId: contract.projectId,
+          supplierId: contract.supplierId || "",
+          direction: contract.direction || "SALES",
+          name: contract.name,
+          contractAmount: decimalToNumber(contract.contractAmount),
+          signedDate: toDateInputValue(contract.signedDate),
+          effectiveDate: toDateInputValue(contract.effectiveDate),
+          endDate: toDateInputValue(contract.endDate),
+          description: contract.description || ""
+        }}
+      />
+    </div>
+  );
+}
